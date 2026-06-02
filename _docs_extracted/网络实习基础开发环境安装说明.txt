@@ -1,0 +1,150 @@
+网络实习基础开发环境安装说明
+Node.js、Python、JDK、Maven 安装与检查步骤
+适用对象：参加《网络实习》的学生。本文档用于指导大家在 Windows 电脑上安装基础开发环境。安装包已由课程组统一提供，学生只需按照本说明逐项安装并检查即可。
+一、安装前准备
+请先将课程组提供的安装包复制到本机某个固定目录，例如 D:\network-practice-env。
+安装过程中如弹出“是否允许此应用对设备进行更改”，请选择“是”。
+安装完成后需要重新打开 CMD 或 PowerShell，再执行版本检查命令。
+若本机已经安装对应环境，并且版本检查正常，可不重复安装。
+二、安装完成后的总检查命令
+全部安装完成后，打开“命令提示符 CMD”或“PowerShell”，依次输入以下命令：
+node -v
+npm -v
+python --version
+pip --version
+java -version
+javac -version
+mvn -v
+说明：以上命令能够显示版本号，即表示对应环境安装成功。如果提示“不是内部或外部命令”，通常是未安装成功，或环境变量 PATH 没有配置成功。
+三、Node.js 安装步骤
+Node.js 用于运行 Vue、Vite 等前端项目，安装 Node.js 后会自动带有 npm。
+1. 找到安装包
+在课程组提供的安装包目录中找到 Node.js 安装包，文件名通常类似：
+node-vxx.x.x-x64.msi
+或
+node-v12.22.12-x64.msi（旧系统备用）
+2. 执行安装
+双击 Node.js 的 .msi 安装包。
+进入安装向导后点击 Next。
+勾选同意协议后继续点击 Next。
+安装路径保持默认即可。
+安装选项保持默认，确保包含 npm package manager，并让安装程序自动加入 PATH。
+点击 Install 开始安装，等待完成后点击 Finish。
+3. 检查是否安装成功
+关闭原来的命令行窗口，重新打开 CMD 或 PowerShell，输入：
+node -v
+npm -v
+如果能看到版本号，例如 v20.x、v18.x、v12.x 以及 npm 版本号，说明 Node.js 安装成功。
+4. 常见问题
+四、Python 安装步骤
+Python 用于运行 FastAPI 后端、脚本程序以及 SQLite 等轻量数据库相关功能。
+1. 找到安装包
+在安装包目录中找到 Python 安装包，文件名通常类似：
+python-3.12.x-amd64.exe
+或
+python-3.8.10-amd64.exe（旧系统备用）
+2. 执行安装
+双击 Python 安装包。
+在安装窗口底部务必勾选 Add python.exe to PATH 或 Add Python to PATH。
+点击 Install Now。
+等待安装完成，点击 Close。
+说明：“Add Python to PATH”非常重要。如果没有勾选，后续在命令行中可能无法直接使用 python 和 pip 命令。
+3. 检查是否安装成功
+重新打开 CMD 或 PowerShell，输入：
+python --version
+pip --version
+如果能看到 Python 版本号和 pip 版本号，说明安装成功。
+4. 测试 Python 是否支持 SQLite
+在命令行中输入 python 进入交互环境，然后输入：
+import sqlite3
+print(sqlite3.sqlite_version)
+exit()
+如果能显示 SQLite 版本号，说明 Python 可以直接使用 SQLite 数据库。
+5. FastAPI 后端依赖安装示例
+如需要运行 FastAPI 后端，可在项目目录中执行：
+python -m venv .venv
+.venv\Scripts\activate
+pip install fastapi uvicorn
+如果教师提供了离线依赖包，请按教师提供的离线安装说明安装。
+五、JDK 安装步骤
+JDK 用于 Java / Spring Boot 后端开发。安装 JDK 后应同时能够使用 java 和 javac 命令。
+1. 找到安装包
+在安装包目录中找到 JDK 安装包，文件名通常类似：
+jdk-17_windows-x64_bin.exe
+jdk-21_windows-x64_bin.exe
+OpenJDK17U-jdk_x64_windows_hotspot_xxx.msi
+2. 执行安装
+双击 JDK 安装包。
+安装路径保持默认即可，例如 C:\Program Files\Java\jdk-17 或 C:\Program Files\Java\jdk-21。
+如果安装过程中出现 Set JAVA_HOME 或 Add to PATH 选项，建议勾选。
+点击 Next / Install，等待安装完成。
+3. 检查是否安装成功
+重新打开 CMD 或 PowerShell，输入：
+java -version
+javac -version
+如果 java 和 javac 都能显示版本号，说明 JDK 安装成功。
+4. 配置 JAVA_HOME（如需要）
+如果 Maven 或 IDEA 找不到 Java，需要手动配置 JAVA_HOME。
+右键“此电脑/计算机” → 属性 → 高级系统设置 → 环境变量。
+在“系统变量”中点击“新建”。
+变量名填写 JAVA_HOME。
+变量值填写 JDK 安装目录，例如 C:\Program Files\Java\jdk-17。
+找到系统变量 Path，点击编辑，新增 %JAVA_HOME%\bin。
+保存后重新打开 CMD，再执行 java -version 和 javac -version。
+说明：JDK 安装目录下应能看到 bin、lib 等文件夹。不要把 JAVA_HOME 配到 bin 目录本身。
+六、Maven 安装步骤
+Maven 用于构建和运行 Java / Spring Boot 项目。Maven 通常是 zip 压缩包，不是双击安装的软件，需要解压并配置环境变量。
+1. 找到压缩包
+在安装包目录中找到 Maven 压缩包，文件名通常类似：
+apache-maven-3.9.x-bin.zip
+apache-maven-3.6.3-bin.zip
+2. 解压 Maven
+右键 Maven zip 压缩包，选择“解压到当前文件夹”或“解压到指定文件夹”。
+建议解压到 C:\Program Files\Apache\。
+解压后目录应类似 C:\Program Files\Apache\apache-maven-3.9.16。
+打开该目录，确认里面能看到 bin、conf、lib 等文件夹。
+3. 配置 MAVEN_HOME
+右键“此电脑/计算机” → 属性 → 高级系统设置 → 环境变量。
+在“系统变量”中点击“新建”。
+变量名填写 MAVEN_HOME。
+变量值填写 Maven 解压目录，例如 C:\Program Files\Apache\apache-maven-3.9.16。
+4. 配置 Path
+在“系统变量”中找到 Path，点击编辑。
+Windows 10/11：点击“新建”，输入 %MAVEN_HOME%\bin。
+Windows 7：在变量值最后追加 ;%MAVEN_HOME%\bin，注意前面有英文分号。
+一路点击“确定”保存。
+5. 检查 Maven 是否成功
+重新打开 CMD 或 PowerShell，输入：
+mvn -v
+如果能显示 Apache Maven 版本号和 Java 版本号，说明 Maven 配置成功。
+6. 常见问题
+七、最终验收记录
+安装完成后，请学生在命令行中执行以下命令，并将结果截图或记录在实践日志中：
+node -v
+npm -v
+python --version
+pip --version
+java -version
+javac -version
+mvn -v
+七、MySQL 安装步骤
+https://blog.csdn.net/weixin_43579015/article/details/117228159
+
+===== TABLE 1 =====
+问题 | 处理方式
+提示 node 不是内部或外部命令 | 重新打开命令行；若仍失败，检查 Node.js 是否加入 PATH，或重新安装。
+Windows 7 安装新版 Node 失败 | 使用课程组提供的旧版 Node.js 安装包，例如 Node.js 12.x。
+npm install 很慢或失败 | 可能是网络问题，可稍后重试，或根据教师提供的镜像源/离线依赖方式处理。
+===== TABLE 2 =====
+问题 | 处理方式
+mvn 不是内部或外部命令 | 检查 MAVEN_HOME 是否填对，Path 是否添加了 %MAVEN_HOME%\bin，并重新打开命令行。
+mvn -v 提示找不到 Java | 检查 java -version 和 javac -version；必要时配置 JAVA_HOME。
+Maven 下载依赖失败 | 通常是网络问题，可稍后重试，或使用教师提供的离线依赖/镜像配置。
+===== TABLE 3 =====
+环境 | 检查命令 | 通过标准 | 结果
+Node.js | node -v | 显示版本号 | 
+npm | npm -v | 显示版本号 | 
+Python | python --version | 显示版本号 | 
+pip | pip --version | 显示版本号 | 
+JDK | java -version / javac -version | 均显示版本号 | 
+Maven | mvn -v | 显示 Maven 和 Java 版本 | 

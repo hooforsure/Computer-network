@@ -1,0 +1,150 @@
+ʵϰװ˵
+Node.jsPythonJDKMaven װ鲽
+ö󣺲μӡʵϰѧĵָ Windows ϰװװɿγͳһṩѧֻ谴ձ˵װ鼴ɡ
+һװǰ׼
+ȽγṩİװƵĳ̶Ŀ¼ D:\network-practice-env
+װ絯ǷӦö豸иġѡǡ
+װɺҪ´ CMD  PowerShellִа汾
+ѾװӦҰ汾ɲظװ
+װɺܼ
+ȫװɺ󣬴򿪡ʾ CMDPowerShell
+node -v
+npm -v
+python --version
+pip --version
+java -version
+javac -version
+mvn -v
+˵ܹʾ汾ţʾӦװɹʾڲⲿͨδװɹ򻷾 PATH ûóɹ
+Node.js װ
+Node.js  VueVite ǰĿװ Node.js Զ npm
+1. ҵװ
+ڿγṩİװĿ¼ҵ Node.js װļͨƣ
+node-vxx.x.x-x64.msi
+
+node-v12.22.12-x64.msiϵͳã
+2. ִаװ
+˫ Node.js  .msi װ
+밲װ򵼺 Next
+ѡͬЭ Next
+װ·Ĭϼɡ
+װѡĬϣȷ npm package managerðװԶ PATH
+ Install ʼװȴɺ Finish
+3. Ƿװɹ
+رԭдڣ´ CMD  PowerShell룺
+node -v
+npm -v
+ܿ汾ţ v20.xv18.xv12.x Լ npm 汾ţ˵ Node.js װɹ
+4. 
+ġPython װ
+Python  FastAPI ˡűԼ SQLite ݿعܡ
+1. ҵװ
+ڰװĿ¼ҵ Python װļͨƣ
+python-3.12.x-amd64.exe
+
+python-3.8.10-amd64.exeϵͳã
+2. ִаװ
+˫ Python װ
+ڰװڵײعѡ Add python.exe to PATH  Add Python to PATH
+ Install Now
+ȴװɣ Close
+˵Add Python to PATHǳҪûйѡп޷ֱʹ python  pip 
+3. Ƿװɹ
+´ CMD  PowerShell룺
+python --version
+pip --version
+ܿ Python 汾ź pip 汾ţ˵װɹ
+4.  Python Ƿ֧ SQLite
+ python 뽻Ȼ룺
+import sqlite3
+print(sqlite3.sqlite_version)
+exit()
+ʾ SQLite 汾ţ˵ Python ֱʹ SQLite ݿ⡣
+5. FastAPI װʾ
+Ҫ FastAPI ˣĿĿ¼ִУ
+python -m venv .venv
+.venv\Scripts\activate
+pip install fastapi uvicorn
+ʦṩ밴ʦṩ߰װ˵װ
+塢JDK װ
+JDK  Java / Spring Boot ˿װ JDK Ӧͬʱܹʹ java  javac 
+1. ҵװ
+ڰװĿ¼ҵ JDK װļͨƣ
+jdk-17_windows-x64_bin.exe
+jdk-21_windows-x64_bin.exe
+OpenJDK17U-jdk_x64_windows_hotspot_xxx.msi
+2. ִаװ
+˫ JDK װ
+װ·Ĭϼɣ C:\Program Files\Java\jdk-17  C:\Program Files\Java\jdk-21
+װг Set JAVA_HOME  Add to PATH ѡ鹴ѡ
+ Next / Installȴװɡ
+3. Ƿװɹ
+´ CMD  PowerShell룺
+java -version
+javac -version
+ java  javac ʾ汾ţ˵ JDK װɹ
+4.  JAVA_HOMEҪ
+ Maven  IDEA Ҳ JavaҪֶ JAVA_HOME
+Ҽ˵/    ߼ϵͳ  
+ڡϵͳе½
+д JAVA_HOME
+ֵд JDK װĿ¼ C:\Program Files\Java\jdk-17
+ҵϵͳ Path༭ %JAVA_HOME%\bin
+´ CMDִ java -version  javac -version
+˵JDK װĿ¼Ӧܿ binlib ļСҪ JAVA_HOME 䵽 bin Ŀ¼
+Maven װ
+Maven ڹ Java / Spring Boot ĿMaven ͨ zip ѹ˫װҪѹû
+1. ҵѹ
+ڰװĿ¼ҵ Maven ѹļͨƣ
+apache-maven-3.9.x-bin.zip
+apache-maven-3.6.3-bin.zip
+2. ѹ Maven
+Ҽ Maven zip ѹѡ񡰽ѹǰļС򡰽ѹָļС
+ѹ C:\Program Files\Apache\
+ѹĿ¼Ӧ C:\Program Files\Apache\apache-maven-3.9.16
+򿪸Ŀ¼ȷܿ binconflib ļС
+3.  MAVEN_HOME
+Ҽ˵/    ߼ϵͳ  
+ڡϵͳе½
+д MAVEN_HOME
+ֵд Maven ѹĿ¼ C:\Program Files\Apache\apache-maven-3.9.16
+4.  Path
+ڡϵͳҵ Path༭
+Windows 10/11½ %MAVEN_HOME%\bin
+Windows 7ڱֵ׷ ;%MAVEN_HOME%\binעǰӢķֺš
+һ·ȷ档
+5.  Maven Ƿɹ
+´ CMD  PowerShell룺
+mvn -v
+ʾ Apache Maven 汾ź Java 汾ţ˵ Maven óɹ
+6. 
+ߡռ¼
+װɺѧִͼ¼ʵ־У
+node -v
+npm -v
+python --version
+pip --version
+java -version
+javac -version
+mvn -v
+ߡMySQL װ
+https://blog.csdn.net/weixin_43579015/article/details/117228159
+
+===== TABLE 1 =====
+ | ʽ
+ʾ node ڲⲿ | ´Уʧܣ Node.js Ƿ PATH°װ
+Windows 7 װ° Node ʧ | ʹÿγṩľɰ Node.js װ Node.js 12.x
+npm install ʧ | ⣬ԺԣݽʦṩľԴ/ʽ
+===== TABLE 2 =====
+ | ʽ
+mvn ڲⲿ |  MAVEN_HOME ǷԣPath Ƿ %MAVEN_HOME%\bin´С
+mvn -v ʾҲ Java |  java -version  javac -versionҪʱ JAVA_HOME
+Maven ʧ | ͨ⣬Ժԣʹýʦṩ/á
+===== TABLE 3 =====
+ |  | ͨ׼ | 
+Node.js | node -v | ʾ汾 | 
+npm | npm -v | ʾ汾 | 
+Python | python --version | ʾ汾 | 
+pip | pip --version | ʾ汾 | 
+JDK | java -version / javac -version | ʾ汾 | 
+Maven | mvn -v | ʾ Maven  Java 汾 | 

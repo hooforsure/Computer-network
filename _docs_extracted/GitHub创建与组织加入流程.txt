@@ -1,0 +1,22 @@
+
+
+===== PAGE 1 =====
+GitHub 创建与组织加入流程
+1. 注册 github 账号
+（1）进入 GitHub 官网 https://github.com/，点击右上角 sign in（如遇到无法打开网
+站的情况，需要使用梯子）
+（2）点击 Create an account，填写信息，完成注册
+2. github 组织加入
+(1) 填 写 【 金 山 文 档 | WPS 云 文 档 】 Github 邮 箱 登 记
+https://www.kdocs.cn/l/ckRXYhSkwiQC，填写 github 注册使用的邮箱
+(2) 关注邮箱 github 组织邀请邮件，点击 join
+
+
+===== PAGE 2 =====
+(3) 加入组织后，点击 organizations 进入组织
+(4) 进入组织后点击 create a new repository
+(5) 填写仓库信息，注意事项在图中已标注，注意仓库可见选择 private
+
+
+===== PAGE 3 =====
+(6) 创建完毕，上传代码文件，完善 readme 文件

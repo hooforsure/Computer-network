@@ -1,0 +1,389 @@
+
+
+===== PAGE 1 =====
+б  Ϊ
+ʵϰ
+ AI ʹָ
+򣺼֪ʶϵʽչʾϵͳʵ
+γĿ꣺ԭչʵ֣淶ʹÿ AI 
+1 
+2 
+3 
+4 
+5 
+˹ѧԺ  2026ʵϰõ
+
+
+===== PAGE 2 =====
+б  Ϊ
+01  뷨ύ·
+02 ջ ǰˡˡݿѡ
+03 ʹ APIݿ⡢ӻ
+04 AI CodexChatGPTȷ
+05 Git淶 汾ơGitHubύREADME
+
+
+===== PAGE 3 =====
+б  Ϊ
+ĿĻ
+û ѧ/ʦʹϵͳѯģ⡢չ
+ʾ
+ǰ˲ ҳ桢ͼ״̬־
+˲ APIӿڡҵ߼Э鲽ɡУ
+ݿ 豸ӳ״ִ̬־
+֧Ų Git/GitHubREADMEԡAI
+
+ ص
+ÿְ
+ӿȷ
+׷٣汾
+
+ʵϰ  01Ŀָ  /  03
+
+
+===== PAGE 4 =====
+б  Ϊ
+ 0  1 Ŀ
+ƣٱ룻ȱջչУ
+뷨 Idea
+  Ŀ  Լ
+ Design
+ܹ    ԭ
+ Coding
+ǰ    API
+ Testing
+  ֤  Ż
+ύ Delivery
+Git  ĵ  ʾ
+̻Ըƴ
+ÿһӦ֤мɹͨ Git 
+̼¼
+ջ
+  ʵ  ֤  ޸
+ÿֵĿӽСɽ
+͡չʾ
+
+
+===== PAGE 5 =====
+б  Ϊ
+ѡջʺĿȡӡҪ
+ջӦڿԡѧϰɱϷḻչʾЧ
+ ѡ ׼ѡ ѡ
+ǰ Vue3 / React + Vite Vue3 + Element Plus React + Ant Design + D3
+ Flask / Express FastAPI / Node.js Spring Boot / ΢
+ݿ LocalStorage / JSON SQLite / MySQL PostgreSQL / MongoDB
+ӻ ECharts ͼ ECharts + Mermaid D3 / AntV ͼ
+AI ChatGPT Codex / Cursor Copilot + 
+
+ϤɱջӾЧ빤̹淶
+ԭ
+ջѡܵԡύܸ֣äĿ׷¼Ҫ
+
+
+===== PAGE 6 =====
+б  Ϊ
+ǰ˸ʲô
+ǰû֪ϵͳĵһ
+еѧϰϵͳ
+ ״̬
+ưť ִ־
+1 ҳ沼
+Ϣ롢ˡ̡״̬־
+2 ߼
+ťƽ״̬¡ûط
+3 չʾ
+˷ص JSON תΪͼʾ
+4 ѧϰ
+Э̡üö塱
+
+
+===== PAGE 7 =====
+б  Ϊ
+ǰ˿
+
+ǰ˼ͨɿܡ
+ߡͿӻ
+⹲ͬ
+1 Vue3
+ʽܣֿ죬ʺϿγĿ
+2 React
+̬ḻʺϸӽ
+3 Vite
+ٴǰĿ
+4 Element Plus
+񡢱ȹϵͳ
+5 Ant Design
+ҵUIϵ
+6 ECharts / D3 / AntV
+ͼͼϵͼ֪ʶͼ
+ƼϣVue3 + Vite + Element Plus + ECharts React + Vite + Ant 
+Design + ECharts
+ Ƽߣvscode
+
+
+
+===== PAGE 8 =====
+б  Ϊ
+˸ʲô
+˰ǰ˲תΪҵݸºͱ׼
+
+ APIӿ
+ ҵ߼
+ ݿ
+ JSON
+ʾʼ DNS   ˼黺  ɽ  д־  ع
+У װЭģⲽ дӳ ־״̬仯 ͳһ JSON 
+
+
+===== PAGE 9 =====
+б  Ϊ
+˿
+̸̬ӶȡӿڿЧ벿𳡾ĸάѡ
+ſ ҵ  API ȫջ̬
+Java Spring Boot
+ҵ / ΢
+ѳ ʺϴϵͳ淶̡ŶЭ
+Ŀ; REST APIȨޡݿ⡢
+spring initializr  controller  service  repository
+Python FastAPI
+ API / AI Ӧ
+ѳ ʺϿٹӿڡԶĵAI/ݷ
+Ŀ; Эģӿڡ־ӿڡģͷ
+uvicorn main:app --reload
+Node.js Express / NestJS
+JS ȫջ / API 
+ѳ ʺǰͬԡ졢̬
+Ŀ;  APIءʵʱWebSocket
+npm init  route  middleware  controller
+Python Django
+ٺ̨ / ϵͳ
+ѳ ʺݹ̨ϵͳ Admin
+Ŀ; ־̨
+model  view  url  admin
+C# ASP.NET Core
+ҵ Web API
+ѳ ʺ΢ջȶ APIƲ
+Ŀ; ҵڲϵͳ֤ӿڷ
+dotnet new webapi  controller
+Go Go / Gin
+߲
+ѳ ʺϸ߲Դռá
+Ŀ; ܽӿڡ־ط
+router  handler  middleware
+Ƽѡ· γĿ / ʾ
+FastAPI  Express
+
+ҵ Java ̬
+Spring Boot
+
+̨ + ݱ
+Django
+
+߲
+Go / Gin
+ؼжϣҪֻСҪŶԻĿģݿ⸴Ӷȡ𻷾άɱ
+Sources: Express  Django  FastAPI  Spring Boot official docs
+ƼߣvscodeIDEAPyCharm
+
+
+
+===== PAGE 10 =====
+б  Ϊ
+˽ӿô
+ƣ
+ӿǰЭġԼ
+롢
+ӿ    ҳ;
+/api/protocols GET  Эб ҳ
+/api/dns/resolve POST domain ++־ DNSҳ
+/api/arp/table GET  ARP ARPҳ
+/api/network/simulate POST url ¼ ۺϳ
+/api/logs GET sessionId ־б ־
+{} JSON ؽ
+{ code, message, data, steps, logs }ֽṹͳһǰ˴ɹʧܡ̲־
+
+
+===== PAGE 11 =====
+б  Ϊ
+ݿôѡ
+ʾ̣ݿѡ
+PostgreSQL / MongoDB
+ݡ֪ʶͼסĿ
+MySQL / SQLite
+ṹʺϿγĿ
+LocalStorage / JSON
+ǰʾʺϿԭ
+A Ž
+ JSON / LocalStorage ʾǨƵ 
+SQLite  MySQL
+B ׼
+Э־豸ʹùϵ
+
+C ׽
+֪ʶͼסʴṹݿɿ 
+MongoDB
+ƼߣNavicat
+
+
+
+===== PAGE 12 =====
+б  Ϊ
+ AI ̹
+ͬAIʺϲͬ׶Σʹ
+1 ChatGPT
+Э顢Ʒʾʡ
+Ų˼·
+2 OpenAI Codex
+Ŀɡ⡢޸
+ֿ
+3 Cursor
+ڱ༭ԻʺϾֲ
+
+4 GitHub Copilot
+IDEڴ벹ȫɡԲ
+ȫ
+5 Claude / Kimi / ͨ
+ĵ⡢ĵɫ
+6 Mermaid / PlantUML
+ͼʱͼܹͼı
+ϲ
+ChatGPTʾʣCodex/CursorĿ޸ģCopilotճȫMermaidͼ
+
+
+===== PAGE 13 =====
+б  Ϊ
+Codex ôã
+׼Ŀ
+ļл 
+Git ֿ
+ Codex
+¼ 
+ChatGPT 
+
+ѡĿ¼
+AIȡĿ
+
+
+Ȼ˵
+Ŀ
+
+鿴޸
+
+в
+ȷϹܿ
+ύ
+Task ʺϽ Codex 
+Ϊ DNS ҳ/δжͬ
+־塣
+Warn 
+Ŀ 󡢹ɲɿش
+롣
+
+
+===== PAGE 14 =====
+б  Ϊ
+ʾʾ AI ҳ
+AIƽṹAIд룬Чȶ
+ڿһЭӻϵͳǰʹ Vue3 
++ Vite + Element Plus
+Ҫ DNS ҳ档ҳṹ
+1. 
+2. ͻˡDNSͻչʾ
+3. ̶
+4. DNS
+5. ִ־
+ҳ沼˵ֺͽ̡
+AI ӦתΪҳͼ
+ 
+/ť ־
+
+
+===== PAGE 15 =====
+б  Ϊ
+ʲô Git
+Git Ǽ¼Ŀÿһα
+Ĵ汾ƹߡ
+v1
+ҳ
+v2
+DNSҳ
+v3
+TCP
+v4
+ۺϳ
+v5
+չʾ
+Git ʲô
+ʷ鿴޸ġ˴󡢴֧֧Э͵ GitHub
+
+Gitύ¼ϵͳơܿŻĵƵȫ̡
+
+
+===== PAGE 16 =====
+б  Ϊ
+Git  GitHub 
+Git Ǳذ汾ƹߣGitHub Զ̴йƽ̨
+G Gitع
+װڵ
+¼汾
+ִ add / commit / branch
+ԻȽ޸
+GH GitHubԶƽ̨
+ֿ߱
+չʾύ¼
+֧ЭĿ
+ڽʦ
+push / pull
+ϵGit ش룬GitHub Զֿ̲⣬Ŀ
+
+
+===== PAGE 17 =====
+б  Ϊ
+README ôд
+README Ǳ
+Ŀ˵飬
+Ҳǳɹյ
+Ҫ
+README.md
+Ŀ Ŀ
+ջ ģ
+Ŀṹ װ
+ݿ˵ ʾͼ
+ο Ϣ
+οhttps://github.com/Lum1104/Understand-Anything/blob/main/README.md
+
+
+===== PAGE 18 =====
+б  Ϊ
+֯֯´Լ Private ֿ⣬ע
+ⲻҪ˺¡
+ֿⴴҪ
+1.  network-practice-2026
+2. ֿͳһΪѧ- 2023123456-
+zhangsan
+3. Choose Visibility ѡ Private
+4. ʱѡ Add a README file
+5. README дĿ顢ջá
+װʽҪܺʾͼ
+githubֿ
+
+
+
+===== PAGE 19 =====
+б  Ϊ
+ѧϰ
+1. OpenAI Codex ٷĵdevelopers.openai.com/codexchatgpt.com/codex/get-started
+2. React ٷĵreact.dev/learn
+3. Vue ٷĵvuejs.org/guide/introduction.html
+4. FastAPI ٷĵfastapi.tiangolo.com
+5. Git ٷĵgit-scm.com/docsgithubʹý̳https://www.bilibili.com/video/BV14qh8ztEhv/
+6. Element-Plus ٷĵhttps://element-plus.org/#/zh-CN
+7. Ͱʸͼ⣺https://www.iconfont.cn/
+8. ̬https://ruoyi.vip/
+9. 0-1ȫջĿhttps://www.bilibili.com/video/BV1Dx4y1x719/
+10.IDEA װhttps://blog.csdn.net/2301_80220193/article/details/141823888
+
+
+===== PAGE 20 =====
+б  Ϊ
+лл

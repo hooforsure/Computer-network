@@ -1,0 +1,389 @@
+
+
+===== PAGE 1 =====
+科研报国  当为人先
+《网络实习》
+软件开发流程与 AI 工具使用指南
+面向：计算机网络知识体系交互式展示系统设计与实现
+课程目标：理解网络原理，掌握工程实现，规范使用开发工具与 AI 辅助能力
+1 需求
+2 设计
+3 开发
+4 测试
+5 交付
+人工智能学院 · 2026年网络实习课堂导入
+
+
+===== PAGE 2 =====
+科研报国  当为人先
+01 开发流程 从想法到提交的完整路径
+02 技术栈 前端、后端、数据库如何选择
+03 工具使用 开发环境、API、数据库、可视化
+04 AI辅助 Codex、ChatGPT等如何正确用
+05 Git规范 版本控制、GitHub提交、README
+
+
+===== PAGE 3 =====
+科研报国  当为人先
+软件项目的基本层次
+用户层 学生/教师使用系统，触发查询、模拟、测试与展
+示
+前端层 页面、交互、动画、拓扑图、状态表、日志面板
+后端层 API接口、业务逻辑、协议步骤生成、数据校验
+数据库层 设备、缓存表、映射表、连接状态、执行日志
+工程支撑层 Git/GitHub、README、测试、部署、AI辅助开
+发
+◎ 工程重点
+每层职责清晰，
+接口明确，数据
+可追踪，版本可
+回退
+网络实习 · 从0到1项目开发指导  /  03
+
+
+===== PAGE 4 =====
+科研报国  当为人先
+从 0 到 1 的开发总流程
+先设计，再编码；先闭环，再扩展；先运行，再美化
+想法 Idea
+问题 · 目标 · 约束
+设计 Design
+架构 · 流程 · 原型
+编码 Coding
+前端 · 后端 · API
+测试 Testing
+调试 · 验证 · 优化
+提交 Delivery
+Git · 文档 · 演示
+工程化开发不是线性复制代码
+每一步都应产生可验证的中间成果，并通过 Git 
+保留过程记录。
+迭代闭环
+设计 → 实现 → 验证 → 修改
+每轮迭代都让项目更接近“可运行、可解
+释、可展示”。
+
+
+===== PAGE 5 =====
+科研报国  当为人先
+选择技术栈：适合项目比“复杂”更重要
+技术栈应服务于可运行性、学习成本、资料丰富度与展示效果
+层次 入门选择 标准选择 进阶选择
+前端 Vue3 / React + Vite Vue3 + Element Plus React + Ant Design + D3
+后端 Flask / Express FastAPI / Node.js Spring Boot / 微服务化
+数据库 LocalStorage / JSON SQLite / MySQL PostgreSQL / MongoDB
+可视化 ECharts 基础图表 ECharts + Mermaid D3 / AntV 图谱
+AI辅助 ChatGPT Codex / Cursor Copilot + 代码审查
+建议
+先用熟悉技术完成闭环，再逐步升级视觉效果与工程规范。
+原则
+技术栈自选、能启动、能调试、能提交、能复现，比盲目追求新技术更重要。
+
+
+===== PAGE 6 =====
+科研报国  当为人先
+前端负责什么？
+前端是用户感知系统质量的第一入口
+浏览器中的学习系统界面
+网络拓扑区 状态表区
+控制按钮 执行日志
+1 页面布局
+把信息分区：输入、拓扑、流程、状态表、日志
+2 交互逻辑
+按钮触发、步骤推进、状态更新、重置回放
+3 数据展示
+将后端返回的 JSON 转化为表格、图、动画和提示
+4 学习体验
+让协议过程“看得见、点得动、讲得清”
+
+
+===== PAGE 7 =====
+科研报国  当为人先
+主流前端开发
+工具
+前端技术通常由框架、构
+建工具、组件库和可视化
+库共同组成
+1 Vue3
+渐进式框架，上手快，适合课程项目
+2 React
+组件化生态丰富，适合复杂交互
+3 Vite
+快速创建和启动前端项目
+4 Element Plus
+表格、表单、弹窗等管理系统组件
+5 Ant Design
+成熟的企业级UI组件体系
+6 ECharts / D3 / AntV
+图表、拓扑图、关系图、知识图谱
+推荐组合：Vue3 + Vite + Element Plus + ECharts；或 React + Vite + Ant 
+Design + ECharts
+ 推荐工具：vscode
+
+
+
+===== PAGE 8 =====
+科研报国  当为人先
+后端负责什么？
+后端把前端操作转化为业务处理、数据更新和标准化返回
+浏览器
+ API接口
+ 业务逻辑
+ 数据库
+ JSON返回
+示例：点击“开始 DNS 解析” → 后端检查缓存 → 生成解析步骤 → 写入日志 → 返回过程数据
+接收请求与参数校验 封装协议模拟步骤 读写缓存表与映射表 生成日志和状态变化 统一返回 JSON 数据
+
+
+===== PAGE 9 =====
+科研报国  当为人先
+主流后端框架
+从语言生态、工程复杂度、接口开发效率与部署场景四个维度选择
+入门快 企业级 高性能 API 全栈生态
+Java Spring Boot
+企业级后端 / 微服务
+最佳场景 适合大型系统、规范化工程、团队协作
+项目用途 REST API、权限、数据库、服务治理
+spring initializr → controller → service → repository
+Python FastAPI
+高性能 API / AI 应用
+最佳场景 适合快速构建接口、自动文档、AI/数据服务
+项目用途 协议模拟接口、日志接口、模型服务
+uvicorn main:app --reload
+Node.js Express / NestJS
+JS 全栈 / API 服务
+最佳场景 适合前后端同语言、开发快、生态灵活
+项目用途 轻量 API、网关、实时交互、WebSocket
+npm init → route → middleware → controller
+Python Django
+快速后台 / 管理系统
+最佳场景 适合数据管理、后台系统、内置 Admin
+项目用途 题库管理、日志管理、后台配置
+model → view → url → admin
+C# ASP.NET Core
+企业级 Web API
+最佳场景 适合微软技术栈、稳定 API、云部署
+项目用途 企业内部系统、身份认证、接口服务
+dotnet new webapi → controller
+Go Go / Gin
+轻量高并发服务
+最佳场景 适合高并发、低资源占用、部署简单
+项目用途 高性能接口、日志服务、网关服务
+router → handler → middleware
+推荐选择路径 课程项目 / 快速演示
+FastAPI 或 Express
+→
+企业级 Java 生态
+Spring Boot
+→
+后台管理 + 数据表
+Django
+→
+高并发轻量服务
+Go / Gin
+关键判断：不要只看“流行”，而要看团队语言基础、项目规模、数据库复杂度、部署环境与后续维护成本。
+Sources: Express · Django · FastAPI · Spring Boot official docs
+推荐开发工具：vscode、IDEA、PyCharm
+
+
+
+===== PAGE 10 =====
+科研报国  当为人先
+后端接口怎么设
+计？
+接口是前后端协作的“契约”：输
+入、处理、输出必须清晰
+接口 方法 输入 输出 页面用途
+/api/protocols GET 无 协议列表 导航页
+/api/dns/resolve POST domain 步骤+缓存+日志 DNS页
+/api/arp/table GET 无 ARP表项 ARP页
+/api/network/simulate POST url 完整事件流 综合场景
+/api/logs GET sessionId 日志列表 日志面板
+{} JSON 返回建议
+{ code, message, data, steps, logs }：保持结构统一，便于前端处理成功、失败、过程步骤和日志。
+
+
+===== PAGE 11 =====
+科研报国  当为人先
+主流数据库怎么选？
+从轻量演示到完整工程，数据库选择可以逐级提升
+PostgreSQL / MongoDB
+复杂数据、知识图谱、进阶项目
+MySQL / SQLite
+表结构清晰，适合课程项目
+LocalStorage / JSON
+纯前端演示，适合快速原型
+A 入门建议
+先用 JSON / LocalStorage 完成演示，再迁移到 
+SQLite 或 MySQL。
+B 标准建议
+协议表、日志表、设备表使用关系型数据
+库最清晰。
+C 进阶建议
+知识图谱、问答索引或半结构化数据可考虑 
+MongoDB。
+推荐开发工具：Navicat
+
+
+
+===== PAGE 12 =====
+科研报国  当为人先
+常用 AI 编程工具
+不同AI工具适合不同开发阶段，建议组合使用
+1 ChatGPT
+解释协议、设计方案、生成提示词、
+排查思路
+2 OpenAI Codex
+项目级代码生成、理解代码库、修改
+仓库任务
+3 Cursor
+在编辑器内与代码对话，适合局部修
+改
+4 GitHub Copilot
+IDE内代码补全、函数生成、测试补
+全
+5 Claude / Kimi / 通义
+长文档理解、方案整理、文档润色
+6 Mermaid / PlantUML
+生成流程图、时序图、架构图文本
+组合策略
+ChatGPT做方案与提示词，Codex/Cursor做项目代码修改，Copilot做日常补全，Mermaid辅助画图。
+
+
+===== PAGE 13 =====
+科研报国  当为人先
+Codex 怎么用？
+准备项目
+本地文件夹或 
+Git 仓库
+打开 Codex
+登录 
+ChatGPT 账
+号
+选择目录
+让AI读取项目
+上下文
+描述任务
+自然语言说明
+目标
+审查差异
+查看代码修改
+与解释
+运行测试
+确认功能可用
+再提交
+Task 适合交给 Codex 的任务
+为 DNS 页面新增缓存命中/未命中动画，并同步更新日
+志面板。”
+Warn 不建议的任务
+“帮我做完整项目。” 过大、过泛，容易生成不可控代
+码。
+
+
+===== PAGE 14 =====
+科研报国  当为人先
+提示词示例：让 AI 设计页面
+先让AI设计结构，再让AI写代码，效果会更稳定
+我正在开发一个计算机网络协议可视化系统，前端使用 Vue3 
++ Vite + Element Plus。
+现在要设计 DNS 域名解析页面。请帮我设计页面结构，包括：
+1. 域名输入区
+2. 客户端、DNS服务器和缓存表展示区
+3. 解析过程动画区
+4. DNS缓存表
+5. 执行日志区
+请输出页面布局说明、组件划分和交互流程。
+AI 输出应转化为页面草图
+动画区 缓存表
+输入/按钮 日志区
+
+
+===== PAGE 15 =====
+科研报国  当为人先
+什么是 Git？
+Git 是记录项目每一次变
+化的代码版本控制工具。
+v1
+首页框架
+v2
+DNS页面
+v3
+TCP动画
+v4
+综合场景
+v5
+最终展示
+Git 能做什么？
+保存历史、查看修改、回退错误、创建分支、支持协作、推送到 GitHub。
+工程意义
+Git提交记录可以体现需求分析、系统设计、功能开发、测试优化和文档完善的全过程。
+
+
+===== PAGE 16 =====
+科研报国  当为人先
+Git 和 GitHub 的区别
+Git 是本地版本控制工具，GitHub 是远程代码托管平台
+G Git：本地工具
+安装在电脑上
+记录代码版本
+执行 add / commit / branch
+可以回退与比较修改
+GH GitHub：远程平台
+在线保存代码仓库
+展示提交记录
+支持协作与项目管理
+便于教师检查过程
+push / pull
+关系：Git 管理本地代码，GitHub 保存远程仓库，两者配合完成项目管理。
+
+
+===== PAGE 17 =====
+科研报国  当为人先
+README 怎么写？
+README 是别人运
+行你项目的说明书，
+也是成果验收的重
+要入口
+README.md
+项目名称 项目简介
+技术栈 功能模块
+项目结构 安装与运行
+数据库说明 演示截图
+参考资料 作者信息
+参考：https://github.com/Lum1104/Understand-Anything/blob/main/README.md
+
+
+===== PAGE 18 =====
+科研报国  当为人先
+加入组织后，请在组织下创建自己的 Private 仓库，注
+意不要创建到个人账号下。
+仓库创建要求：
+1. 进入 network-practice-2026；
+2. 仓库名统一为“学号-姓名”，例如 2023123456-
+zhangsan；
+3. Choose Visibility 必须选择 Private；
+4. 创建时勾选 Add a README file；
+5. README 中需写明项目简介、技术栈、环境配置、
+安装方式、运行命令、主要功能和演示截图；
+github创建仓库
+
+
+
+===== PAGE 19 =====
+科研报国  当为人先
+学习资料
+1. OpenAI Codex 官方文档：developers.openai.com/codex；chatgpt.com/codex/get-started
+2. React 官方文档：react.dev/learn
+3. Vue 官方文档：vuejs.org/guide/introduction.html
+4. FastAPI 官方文档：fastapi.tiangolo.com
+5. Git 官方文档：git-scm.com/docs；github使用教程https://www.bilibili.com/video/BV14qh8ztEhv/
+6. Element-Plus 官方文档：https://element-plus.org/#/zh-CN
+7. 阿里巴巴矢量图标库：https://www.iconfont.cn/
+8. 若依框架生态：https://ruoyi.vip/
+9. 从0-1全栈项目搭建：https://www.bilibili.com/video/BV1Dx4y1x719/
+10.IDEA 安装：https://blog.csdn.net/2301_80220193/article/details/141823888
+
+
+===== PAGE 20 =====
+科研报国  当为人先
+谢谢大家
