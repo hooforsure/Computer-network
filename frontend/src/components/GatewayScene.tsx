@@ -8,9 +8,9 @@ interface GatewaySceneProps {
   transitionBoost: number
 }
 
-const SHIP_SIZE = 10
-const SHIP_POSITION = new THREE.Vector3(1.2, -0.5, -0.6)
-const SHIP_ROTATION = new THREE.Euler(0.5, -0.82, 0.24)
+const SHIP_SIZE =35
+const SHIP_POSITION = new THREE.Vector3(2.8, -0.25, 1)
+const SHIP_ROTATION = new THREE.Euler(0.6, -0.1, 0.24)
 const STATION_EMISSIVE = new THREE.Color('#20101c')
 const COMPANION_EMISSIVE = new THREE.Color('#08070d')
 
@@ -45,7 +45,7 @@ function StationSpecularRig() {
   const broadFill = useRef<THREE.PointLight>(null)
 
   useFrame(({ clock }) => {
-    const t = clock.elapsedTime
+    const t = clock.elapsedTime*2
     if (coldGlint.current) {
       coldGlint.current.position.set(
         SHIP_POSITION.x - 1.2 + Math.sin(t * 0.65) * 1.2,
@@ -156,7 +156,7 @@ function NebulaBackdrop() {
 
   useFrame(({ clock }) => {
     if (!ref.current) return
-    ref.current.rotation.y = -0.64 + clock.elapsedTime * 0.006
+    ref.current.rotation.y = -0.64 + clock.elapsedTime * 0.002
     ref.current.rotation.x = -0.08 + Math.sin(clock.elapsedTime * 0.05) * 0.01
   })
 
@@ -309,7 +309,7 @@ function StationSubject() {
     if (!ref.current) return
     const t = clock.elapsedTime
     ref.current.position.copy(SHIP_POSITION)
-    ref.current.rotation.set(SHIP_ROTATION.x, SHIP_ROTATION.y + t * 0.8, SHIP_ROTATION.z)
+    ref.current.rotation.set(SHIP_ROTATION.x, SHIP_ROTATION.y + t * 0.2, SHIP_ROTATION.z)
   })
 
   return (

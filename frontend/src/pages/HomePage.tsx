@@ -1,10 +1,14 @@
-import { ArrowRight, Atom, BookOpen, Music, Network, Volume2, VolumeX } from 'lucide-react'
+import { ArrowRight, Atom, BookOpen, Network } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import CurvedLoop from '../components/CurvedLoop'
+import FuzzyText from '../components/FuzzyText'
 import { GatewayScene } from '../components/GatewayScene'
-import { CircularSignalText, ClickSpark, FadeContent, GlowBorder, HeroSignalTitle } from '../components/VisualEffects'
+import GlitchText from '../components/GlitchText'
+import ScrollFloat from '../components/ScrollFloat'
+import { CircularSignalText, ClickSpark, FadeContent, GlowBorder } from '../components/VisualEffects'
 import { cn } from '../lib/classNames'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -39,11 +43,8 @@ const entries = [
 export function HomePage() {
   const navigate = useNavigate()
   const rootRef = useRef<HTMLDivElement>(null)
-  const audioRef = useRef<HTMLAudioElement>(null)
   const [focus, setFocus] = useState(0)
   const [transitioning, setTransitioning] = useState(false)
-  const [scrollProgress, setScrollProgress] = useState(0)
-  const [audioState, setAudioState] = useState<'idle' | 'playing' | 'blocked' | 'muted'>('idle')
 
   useEffect(() => {
     const context = gsap.context(() => {
@@ -61,13 +62,6 @@ export function HomePage() {
           onEnter: () => setFocus(index),
           onEnterBack: () => setFocus(index),
         })
-      })
-
-      ScrollTrigger.create({
-        trigger: rootRef.current,
-        start: 'top top',
-        end: 'bottom bottom',
-        onUpdate: (self) => setScrollProgress(self.progress),
       })
 
       gsap.fromTo(
@@ -91,23 +85,9 @@ export function HomePage() {
     return () => context.revert()
   }, [])
 
-  useEffect(() => {
-    const audio = audioRef.current
-    if (!audio) return
-    audio.volume = 0.34
-    audio.loop = true
-    audio
-      .play()
-      .then(() => setAudioState('playing'))
-      .catch(() => setAudioState('blocked'))
-  }, [])
-
   function enterModule(path: string, index: number) {
     setFocus(index)
     setTransitioning(true)
-    if (audioRef.current && audioState !== 'playing') {
-      void audioRef.current.play().then(() => setAudioState('playing')).catch(() => setAudioState('blocked'))
-    }
     gsap.to('.gateway-transition', {
       opacity: 1,
       scale: 1,
@@ -117,34 +97,14 @@ export function HomePage() {
     })
   }
 
-  function activateAudio() {
-    const audio = audioRef.current
-    if (!audio) return
-    audio.muted = false
-    void audio.play().then(() => setAudioState('playing')).catch(() => setAudioState('blocked'))
-  }
-
-  function toggleMute() {
-    const audio = audioRef.current
-    if (!audio) return
-    audio.muted = !audio.muted
-    setAudioState(audio.muted ? 'muted' : 'playing')
-  }
-
   return (
     <ClickSpark>
       <main ref={rootRef} className="relative min-h-screen overflow-hidden bg-[#05070d] text-slate-50">
-        <audio ref={audioRef} src="/audio/worry.mp3" preload="auto" />
         <div className="fixed inset-0 z-0">
           <GatewayScene focus={focus} transitionBoost={transitioning ? 1 : 0} />
         </div>
         <div className="pointer-events-none fixed inset-0 z-10 bg-[radial-gradient(circle_at_66%_46%,transparent,rgba(5,7,13,0.24)_68%,#05070d_100%)]" />
-        <div
-          className="pointer-events-none fixed left-0 top-0 z-40 h-1 bg-cyan-300 shadow-[0_0_24px_rgba(34,211,238,0.8)]"
-          style={{ width: `${Math.max(scrollProgress * 100, 7)}%` }}
-        />
         <div className="gateway-transition pointer-events-none fixed inset-0 z-50 scale-75 bg-[radial-gradient(circle_at_center,rgba(34,211,238,0.95),rgba(5,7,13,0.95)_42%,#05070d_72%)] opacity-0" />
-        <AudioControl state={audioState} onActivate={activateAudio} onToggleMute={toggleMute} />
 
         <section className="relative z-20 flex min-h-screen items-center px-5 py-24 sm:px-8">
           <div className="hero-copy relative max-w-5xl">
@@ -154,10 +114,8 @@ export function HomePage() {
                 NetVerse Protocol Lab
               </div>
             </div>
-            <HeroSignalTitle text="From domain to packet, watch the network become visible." />
-            <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-300">
-              A cinematic network-practice system where DNS, TCP, integrated web access, and the TCP/IP knowledge atlas become interactive 3D experiments.
-            </p>
+            <FuzzyHeroTitle />
+            <FuzzySubtitle />
             <div className="mt-9 flex flex-wrap gap-3">
               <button
                 type="button"
@@ -181,8 +139,16 @@ export function HomePage() {
       <section id="entries" className="relative z-20 mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-5 py-24 sm:px-8">
         <FadeContent>
           <div className="mb-8">
-            <div className="font-mono-data mb-3 text-xs uppercase tracking-[0.4em] text-slate-400">Entry points</div>
-            <h2 className="font-display text-3xl font-bold text-white sm:text-5xl">Choose a protocol chamber.</h2>
+            <ScrollFloat
+              containerClassName="home-scroll-float font-display text-left"
+              textClassName="home-scroll-float-text"
+              scrollStart="top bottom-=10%"
+              scrollEnd="center center"
+              animationDuration={0.85}
+              stagger={0.025}
+            >
+              Choose a protocol chamber.
+            </ScrollFloat>
           </div>
           <div className="grid gap-5 lg:grid-cols-3">
             {entries.map((entry, index) => (
@@ -208,45 +174,81 @@ export function HomePage() {
           </p>
         </div>
       </section>
+
+      <section className="home-curved-loop relative z-20 overflow-hidden py-8">
+        <CurvedLoop
+          marqueeText="DNS  TCP  ARP  HTTP  CACHE  PACKET FLOW  FIVE LAYERS  KNOWLEDGE ATLAS  "
+          speed={1.15}
+          curveAmount={86}
+          direction="left"
+          interactive
+          className="home-curved-loop-text"
+        />
+      </section>
       </main>
     </ClickSpark>
   )
 }
 
-function AudioControl({
-  state,
-  onActivate,
-  onToggleMute,
-}: {
-  state: 'idle' | 'playing' | 'blocked' | 'muted'
-  onActivate: () => void
-  onToggleMute: () => void
-}) {
-  const active = state === 'playing'
-  const blocked = state === 'blocked' || state === 'idle'
+function FuzzyHeroTitle() {
+  const lines = ['From domain to', 'packet, watch', 'the network', 'become visible.']
 
   return (
-    <div className="fixed right-5 top-5 z-40 flex items-center gap-2">
-      {blocked && (
-        <button
-          type="button"
-          onClick={onActivate}
-          className="glass-panel inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold text-cyan-100 transition hover:border-cyan-300/60"
-        >
-          <Music className="h-4 w-4" />
-          Activate soundtrack
-        </button>
-      )}
-      {(active || state === 'muted') && (
-        <button
-          type="button"
-          onClick={onToggleMute}
-          className="glass-panel inline-flex h-10 w-10 items-center justify-center rounded-full text-cyan-100 transition hover:border-cyan-300/60"
-          aria-label={state === 'muted' ? 'Unmute soundtrack' : 'Mute soundtrack'}
-        >
-          {state === 'muted' ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-        </button>
-      )}
+    <h1 className="hero-signal-title fuzzy-hero-title font-display max-w-5xl text-white">
+      <span className="sr-only">From domain to packet, watch the network become visible.</span>
+      {lines.map((line) => (
+        <span key={line} className="fuzzy-hero-line glitch-fuzzy-line" aria-hidden="true">
+          <FuzzyText
+            fontSize="clamp(3.8rem, 6.2vw, 7.2rem)"
+            fontWeight={800}
+            fontFamily='"Sora", ui-sans-serif, system-ui, sans-serif'
+            color="#f8fafc"
+            baseIntensity={0.14}
+            hoverIntensity={0.42}
+            fuzzRange={18}
+            fps={42}
+            direction="horizontal"
+            transitionDuration={0.18}
+            glitchMode
+            glitchInterval={2600}
+            glitchDuration={120}
+            gradient={['#ffffff', '#e7fbff', '#8ff3ff', '#ffffff']}
+            className="fuzzy-hero-canvas"
+          >
+            {line}
+          </FuzzyText>
+          <GlitchText speed={0.86} enableShadows enableOnHover={false} className="hero-glitch-text">
+            {line}
+          </GlitchText>
+        </span>
+      ))}
+    </h1>
+  )
+}
+
+function FuzzySubtitle() {
+  const text =
+    'A cinematic network-practice system where DNS, TCP, integrated web access, and the TCP/IP knowledge atlas become interactive 3D experiments.'
+
+  return (
+    <div className="subtitle-blur-entry mt-7 max-w-2xl">
+      <span className="sr-only">{text}</span>
+      <FuzzyText
+        fontSize="clamp(1rem, 1.35vw, 1.18rem)"
+        fontWeight={500}
+        fontFamily='"Manrope", ui-sans-serif, system-ui, sans-serif'
+        color="#cbd5e1"
+        baseIntensity={0.055}
+        hoverIntensity={0.18}
+        fuzzRange={8}
+        fps={30}
+        direction="horizontal"
+        transitionDuration={0.2}
+        gradient={['#cbd5e1', '#e0fbff', '#93e8f7']}
+        className="fuzzy-subtitle-canvas"
+      >
+        {text}
+      </FuzzyText>
     </div>
   )
 }
