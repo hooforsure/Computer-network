@@ -1,4 +1,4 @@
-import { ArrowRight, Atom, BookOpen, Network } from 'lucide-react'
+import { ArrowRight, Atom, BookOpen, Music, Network, Volume2, VolumeX } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import gsap from 'gsap'
@@ -38,8 +38,12 @@ const entries = [
 export function HomePage() {
   const navigate = useNavigate()
   const rootRef = useRef<HTMLDivElement>(null)
+  const audioRef = useRef<HTMLAudioElement>(null)
   const [focus, setFocus] = useState(0)
   const [transitioning, setTransitioning] = useState(false)
+  const [scrollProgress, setScrollProgress] = useState(0)
+  const [transitionBoost, setTransitionBoost] = useState(0)
+  const [audioState, setAudioState] = useState<'idle' | 'playing' | 'blocked' | 'muted'>('idle')
 
   useEffect(() => {
     const context = gsap.context(() => {
@@ -52,36 +56,111 @@ export function HomePage() {
       entries.forEach((_, index) => {
         ScrollTrigger.create({
           trigger: `.entry-${index}`,
-          start: 'top center',
-          end: 'bottom center',
+          start: 'top 72%',
+          end: 'bottom 36%',
           onEnter: () => setFocus(index),
           onEnterBack: () => setFocus(index),
         })
       })
+
+      ScrollTrigger.create({
+        trigger: rootRef.current,
+        start: 'top top',
+        end: 'bottom bottom',
+        scrub: 0.75,
+        onUpdate: (self) => setScrollProgress(self.progress),
+      })
+
+      gsap.to('.aurora-layer', {
+        backgroundPosition: '120% 80%, -20% 20%, 50% 120%',
+        ease: 'none',
+        scrollTrigger: {
+          trigger: rootRef.current,
+          start: 'top top',
+          end: 'bottom bottom',
+          scrub: 1,
+        },
+      })
+
+      gsap.fromTo(
+        '.entry-card',
+        { y: 34, opacity: 0.2 },
+        {
+          y: 0,
+          opacity: 1,
+          stagger: 0.08,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: '#entries',
+            start: 'top 62%',
+            end: 'top 18%',
+            scrub: 0.65,
+          },
+        },
+      )
     }, rootRef)
 
     return () => context.revert()
   }, [])
 
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    audio.volume = 0.34
+    audio.loop = true
+    audio
+      .play()
+      .then(() => setAudioState('playing'))
+      .catch(() => setAudioState('blocked'))
+  }, [])
+
   function enterModule(path: string, index: number) {
     setFocus(index)
     setTransitioning(true)
+    setTransitionBoost(1)
+    if (audioRef.current && audioState !== 'playing') {
+      void audioRef.current.play().then(() => setAudioState('playing')).catch(() => setAudioState('blocked'))
+    }
     gsap.to('.gateway-transition', {
       opacity: 1,
       scale: 1,
-      duration: 0.72,
+      duration: 0.9,
       ease: 'power3.inOut',
       onComplete: () => navigate(path),
     })
   }
 
+  function activateAudio() {
+    const audio = audioRef.current
+    if (!audio) return
+    audio.muted = false
+    void audio.play().then(() => setAudioState('playing')).catch(() => setAudioState('blocked'))
+  }
+
+  function toggleMute() {
+    const audio = audioRef.current
+    if (!audio) return
+    audio.muted = !audio.muted
+    setAudioState(audio.muted ? 'muted' : 'playing')
+  }
+
   return (
     <main ref={rootRef} className="relative min-h-screen overflow-hidden bg-[#05070d] text-slate-50">
+      <audio ref={audioRef} src="/audio/worry.mp3" preload="auto" />
       <div className="fixed inset-0 z-0">
-        <GatewayScene focus={focus} />
+        <GatewayScene focus={focus} scrollProgress={scrollProgress} transitionBoost={transitionBoost} />
       </div>
+      <div className="aurora-layer pointer-events-none fixed inset-0 z-[1] opacity-80" />
+      <div className="warp-grid pointer-events-none fixed inset-0 z-[2] opacity-45" />
+      <div className="cinematic-rings pointer-events-none fixed inset-0 z-[3]" />
+      <div className="comet-lanes pointer-events-none fixed inset-0 z-[4]" />
       <div className="pointer-events-none fixed inset-0 z-10 bg-[radial-gradient(circle_at_center,transparent,rgba(5,7,13,0.42)_62%,#05070d_100%)]" />
+      <div
+        className="pointer-events-none fixed left-0 top-0 z-40 h-1 bg-cyan-300 shadow-[0_0_24px_rgba(34,211,238,0.8)]"
+        style={{ width: `${Math.max(scrollProgress * 100, 7)}%` }}
+      />
       <div className="gateway-transition pointer-events-none fixed inset-0 z-50 scale-75 bg-[radial-gradient(circle_at_center,rgba(34,211,238,0.95),rgba(5,7,13,0.95)_42%,#05070d_72%)] opacity-0" />
+      <AudioControl state={audioState} onActivate={activateAudio} onToggleMute={toggleMute} />
 
       <section className="relative z-20 flex min-h-screen items-center px-5 py-24 sm:px-8">
         <div className="hero-copy max-w-4xl">
@@ -98,10 +177,11 @@ export function HomePage() {
             <button
               type="button"
               onClick={() => enterModule('/protocol-lab', 0)}
-              className="inline-flex items-center gap-2 rounded-full bg-cyan-300 px-6 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-200"
+              className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-cyan-300 px-6 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-200"
             >
-              Start the lab
-              <ArrowRight className="h-4 w-4" />
+              <span className="absolute inset-0 translate-x-[-120%] bg-gradient-to-r from-transparent via-white/60 to-transparent transition duration-700 group-hover:translate-x-[120%]" />
+              <span className="relative">Start the lab</span>
+              <ArrowRight className="relative h-4 w-4" />
             </button>
             <a
               href="#entries"
@@ -145,6 +225,44 @@ export function HomePage() {
   )
 }
 
+function AudioControl({
+  state,
+  onActivate,
+  onToggleMute,
+}: {
+  state: 'idle' | 'playing' | 'blocked' | 'muted'
+  onActivate: () => void
+  onToggleMute: () => void
+}) {
+  const active = state === 'playing'
+  const blocked = state === 'blocked' || state === 'idle'
+
+  return (
+    <div className="fixed right-5 top-5 z-40 flex items-center gap-2">
+      {blocked && (
+        <button
+          type="button"
+          onClick={onActivate}
+          className="glass-panel inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold text-cyan-100 transition hover:border-cyan-300/60"
+        >
+          <Music className="h-4 w-4" />
+          Activate soundtrack
+        </button>
+      )}
+      {(active || state === 'muted') && (
+        <button
+          type="button"
+          onClick={onToggleMute}
+          className="glass-panel inline-flex h-10 w-10 items-center justify-center rounded-full text-cyan-100 transition hover:border-cyan-300/60"
+          aria-label={state === 'muted' ? 'Unmute soundtrack' : 'Mute soundtrack'}
+        >
+          {state === 'muted' ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+        </button>
+      )}
+    </div>
+  )
+}
+
 function EntryCard({
   entry,
   index,
@@ -175,7 +293,7 @@ function EntryCard({
       onFocus={onFocus}
       onClick={onEnter}
       className={cn(
-        `entry-${index} glass-panel group min-h-80 rounded-3xl p-6 text-left transition duration-300`,
+        `entry-${index} entry-card glass-panel group min-h-80 rounded-3xl p-6 text-left transition duration-300`,
         active ? 'translate-y-[-6px] border-cyan-300/50 shadow-[0_0_60px_rgba(34,211,238,0.12)]' : 'hover:translate-y-[-4px]',
       )}
     >

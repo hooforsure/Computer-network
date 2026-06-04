@@ -5,6 +5,8 @@ interface PlaybackControlsProps {
   total: number
   playing: boolean
   speed: number
+  playDisabled?: boolean
+  nextDisabled?: boolean
   onPlayToggle: () => void
   onNext: () => void
   onPrev: () => void
@@ -17,6 +19,8 @@ export function PlaybackControls({
   total,
   playing,
   speed,
+  playDisabled = false,
+  nextDisabled = false,
   onPlayToggle,
   onNext,
   onPrev,
@@ -36,7 +40,8 @@ export function PlaybackControls({
       <button
         type="button"
         onClick={onPlayToggle}
-        className="inline-flex h-10 min-w-28 items-center justify-center gap-2 rounded-xl bg-cyan-300 px-4 text-sm font-bold text-slate-950 transition hover:bg-cyan-200"
+        disabled={playDisabled}
+        className="inline-flex h-10 min-w-28 items-center justify-center gap-2 rounded-xl bg-cyan-300 px-4 text-sm font-bold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
       >
         {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
         {playing ? 'Pause' : 'Play'}
@@ -44,7 +49,8 @@ export function PlaybackControls({
       <button
         type="button"
         onClick={onNext}
-        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700/50 bg-slate-950/50 text-slate-100 transition hover:border-cyan-300/60"
+        disabled={nextDisabled}
+        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700/50 bg-slate-950/50 text-slate-100 transition hover:border-cyan-300/60 disabled:cursor-not-allowed disabled:opacity-40"
         aria-label="Next step"
       >
         <SkipForward className="h-4 w-4" />

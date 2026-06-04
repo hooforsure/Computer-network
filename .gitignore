@@ -50,3 +50,7 @@ Thumbs.db
 
 # Generated screenshots
 *-screenshot.png
+frontend/*.png
+
+# Local source media copies
+music/
