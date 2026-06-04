@@ -4,36 +4,34 @@ interface PlaybackControlsProps {
   current: number
   total: number
   playing: boolean
-  speed: number
+  speed?: number
   playDisabled?: boolean
   nextDisabled?: boolean
   onPlayToggle: () => void
   onNext: () => void
   onPrev: () => void
   onReset: () => void
-  onSpeedChange: (speed: number) => void
+  onSpeedChange?: (speed: number) => void
 }
 
 export function PlaybackControls({
   current,
   total,
   playing,
-  speed,
   playDisabled = false,
   nextDisabled = false,
   onPlayToggle,
   onNext,
   onPrev,
   onReset,
-  onSpeedChange,
 }: PlaybackControlsProps) {
   return (
-    <div className="glass-panel flex flex-wrap items-center gap-2 rounded-2xl p-3">
+    <div className="glass-panel flex w-fit items-center gap-2 rounded-2xl p-2.5">
       <button
         type="button"
         onClick={onPrev}
         className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700/50 bg-slate-950/50 text-slate-100 transition hover:border-cyan-300/60"
-        aria-label="Previous step"
+        aria-label="上一步"
       >
         <SkipBack className="h-4 w-4" />
       </button>
@@ -41,17 +39,17 @@ export function PlaybackControls({
         type="button"
         onClick={onPlayToggle}
         disabled={playDisabled}
-        className="inline-flex h-10 min-w-28 items-center justify-center gap-2 rounded-xl bg-cyan-300 px-4 text-sm font-bold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+        className="inline-flex h-10 min-w-24 items-center justify-center gap-2 rounded-xl bg-cyan-300 px-4 text-sm font-bold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
       >
         {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-        {playing ? 'Pause' : 'Play'}
+        {playing ? '暂停' : '播放'}
       </button>
       <button
         type="button"
         onClick={onNext}
         disabled={nextDisabled}
         className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700/50 bg-slate-950/50 text-slate-100 transition hover:border-cyan-300/60 disabled:cursor-not-allowed disabled:opacity-40"
-        aria-label="Next step"
+        aria-label="下一步"
       >
         <SkipForward className="h-4 w-4" />
       </button>
@@ -59,28 +57,13 @@ export function PlaybackControls({
         type="button"
         onClick={onReset}
         className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700/50 bg-slate-950/50 text-slate-100 transition hover:border-rose-300/60"
-        aria-label="Reset simulation"
+        aria-label="重置"
       >
         <RotateCcw className="h-4 w-4" />
       </button>
-      <div className="ml-1 flex items-center gap-3">
-        <span className="font-mono-data text-xs text-slate-400">
-          {String(current + 1).padStart(2, '0')} / {String(Math.max(total, 1)).padStart(2, '0')}
-        </span>
-        <label className="flex items-center gap-2 text-xs text-slate-400">
-          Speed
-          <input
-            type="range"
-            min="0.5"
-            max="2"
-            step="0.25"
-            value={speed}
-            onChange={(event) => onSpeedChange(Number(event.target.value))}
-            className="w-24 accent-cyan-300"
-          />
-          <span className="font-mono-data w-8 text-cyan-100">{speed.toFixed(2)}x</span>
-        </label>
-      </div>
+      <span className="font-mono-data ml-2 rounded-xl border border-slate-700/45 bg-slate-950/45 px-3 py-2 text-xs text-slate-300">
+        {String(current + 1).padStart(2, '0')} / {String(Math.max(total, 1)).padStart(2, '0')}
+      </span>
     </div>
   )
 }

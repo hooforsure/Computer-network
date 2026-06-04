@@ -16,7 +16,7 @@ import {
 } from '../data/dnsSimulation'
 import { createTcpHandshakeSteps, createTcpReleaseSteps, tcpTopology } from '../data/tcpSimulation'
 import { cn } from '../lib/classNames'
-import type { SimulationStep, TopologyNode } from '../types/simulation'
+import type { TopologyNode } from '../types/simulation'
 
 type LabMode = 'dns' | 'tcp'
 type TcpMode = 'handshake' | 'release'
@@ -213,9 +213,9 @@ export function ProtocolLabPage() {
               onNodeSelect={(node) => setSelectedNodeId(node.id)}
             />
           </div>
-          <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_52%_48%,transparent_0%,rgba(5,7,13,0.14)_46%,rgba(5,7,13,0.86)_100%)]" />
-          <div className="pointer-events-none absolute inset-0 z-[2] bg-[linear-gradient(90deg,rgba(5,7,13,0.95)_0%,rgba(5,7,13,0.55)_28%,transparent_52%,rgba(5,7,13,0.76)_100%)]" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] h-56 bg-gradient-to-t from-[#05070d] via-[#05070d]/82 to-transparent" />
+          <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_42%_56%,transparent_0%,rgba(5,7,13,0.08)_48%,rgba(5,7,13,0.74)_100%)]" />
+          <div className="pointer-events-none absolute inset-0 z-[2] bg-[linear-gradient(90deg,rgba(5,7,13,0.86)_0%,rgba(5,7,13,0.36)_26%,transparent_55%,rgba(5,7,13,0.66)_100%)]" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] h-48 bg-gradient-to-t from-[#05070d] via-[#05070d]/62 to-transparent" />
 
           <div className="pointer-events-none relative z-10 flex min-h-[calc(100vh-4rem)] w-full flex-col px-6 py-8 xl:px-12">
             <header className="pointer-events-auto flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -248,24 +248,44 @@ export function ProtocolLabPage() {
                 onSelect={selectTimelineStep}
               />
             </div>
-            <div className="pointer-events-auto mt-3 flex justify-start">
-              <PlaybackControls
-                current={index}
-                total={steps.length}
-                playing={playing}
-                speed={speed}
-                onPlayToggle={handlePlayToggle}
-                onNext={next}
-                onPrev={prev}
-                onReset={reset}
-                onSpeedChange={setSpeed}
-                playDisabled={terminalDnsRun}
-                nextDisabled={terminalDnsRun}
-              />
+            <div className="pointer-events-auto mt-3 flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+              <div className="w-full xl:max-w-[790px]">
+                <section className="rounded-2xl border border-slate-700/55 bg-slate-950/54 p-3 shadow-[0_0_34px_rgba(34,211,238,0.08)] backdrop-blur-md">
+                <ExperimentInputs
+                  labMode={labMode}
+                  domain={domain}
+                  cacheMatched={Boolean(cachedRecord)}
+                  tcpMode={tcpMode}
+                  clientSeq={clientSeq}
+                  serverSeq={serverSeq}
+                  onDomainChange={setDomain}
+                  onRunDnsQuery={runDnsQuery}
+                  onClearDnsCache={clearDnsCache}
+                  onTcpModeChange={setTcpMode}
+                  onClientSeqChange={setClientSeq}
+                  onServerSeqChange={setServerSeq}
+                />
+                </section>
+              </div>
+              <div className="flex shrink-0 justify-start xl:justify-end">
+                <PlaybackControls
+                  current={index}
+                  total={steps.length}
+                  playing={playing}
+                  speed={speed}
+                  onPlayToggle={handlePlayToggle}
+                  onNext={next}
+                  onPrev={prev}
+                  onReset={reset}
+                  onSpeedChange={setSpeed}
+                  playDisabled={terminalDnsRun}
+                  nextDisabled={terminalDnsRun}
+                />
+              </div>
             </div>
 
-            <div className="mt-6 grid flex-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-              <div className="relative min-h-[470px]">
+            <div className="mt-10 grid flex-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+              <div className="relative min-h-[500px]">
                 <div className="pointer-events-none absolute left-0 top-0 rounded-2xl border border-slate-700/60 bg-slate-950/65 px-4 py-3 backdrop-blur-md">
                   <div className="font-mono-data text-xs uppercase tracking-[0.3em] text-slate-500">Now flying</div>
                   <div className="font-display mt-1 text-lg font-bold text-white">{currentStep.packetType}</div>
@@ -281,51 +301,19 @@ export function ProtocolLabPage() {
 
         <section className="relative z-10 mx-auto grid max-w-[1500px] gap-5 px-4 py-10 xl:grid-cols-[minmax(0,1fr)_390px]">
           <div className="flex flex-col gap-5">
-            <section className="glass-panel rounded-3xl p-5">
-              <ExperimentInputs
-                labMode={labMode}
-                domain={domain}
-                cacheRows={dnsCache}
-                cacheMatched={Boolean(cachedRecord)}
-                runStatus={dnsRunStatus}
-                tcpMode={tcpMode}
-                clientSeq={clientSeq}
-                serverSeq={serverSeq}
-                onDomainChange={setDomain}
-                onRunDnsQuery={runDnsQuery}
-                onClearDnsCache={clearDnsCache}
-                onTcpModeChange={setTcpMode}
-                onClientSeqChange={setClientSeq}
-                onServerSeqChange={setServerSeq}
-              />
-              <RequirementStrip labMode={labMode} tcpMode={tcpMode} />
-            </section>
-
             {completionNotice && (
               <section className="rounded-3xl border border-emerald-300/30 bg-emerald-300/10 p-5 shadow-[0_0_40px_rgba(52,211,153,0.12)]">
-                <div className="font-mono-data mb-2 text-xs uppercase tracking-[0.3em] text-emerald-200">
-                  {completionNotice.mode === 'hit' ? 'Cache hit' : 'Resolution complete'}
-                </div>
                 <div className="font-display text-2xl font-bold text-white">
-                  {completionNotice.domain} resolved to {completionNotice.ip}
+                  {completionNotice.mode === 'hit' ? '缓存命中' : '解析完成'}：{completionNotice.domain} {'->'} {completionNotice.ip}
                 </div>
                 <p className="mt-2 text-sm text-emerald-100/80">
                   {completionNotice.mode === 'hit'
-                    ? 'The record already exists in the local DNS cache, so no recursive query is needed.'
-                    : 'The answer is committed to the local DNS cache. Reset or change the domain to begin another run.'}
+                    ? '本地已有记录，本次不会继续发起递归查询。'
+                    : '最终 IP 已返回主机，并写入本地缓存。'}
                 </p>
               </section>
             )}
 
-            {labMode === 'dns' && (
-              <DnsCacheBoard
-                rows={dnsCache}
-                currentDomain={normalizedDomain}
-                currentStep={currentStep}
-                runStatus={dnsRunStatus}
-                onDeleteRecord={deleteDnsCacheRecord}
-              />
-            )}
             {labMode === 'dns' && selectedNode && (
               <NodeStatePanel
                 node={selectedNode}
@@ -364,9 +352,7 @@ function ModeButton({ active, children, onClick }: { active: boolean; children: 
 function ExperimentInputs({
   labMode,
   domain,
-  cacheRows,
   cacheMatched,
-  runStatus,
   tcpMode,
   clientSeq,
   serverSeq,
@@ -379,9 +365,7 @@ function ExperimentInputs({
 }: {
   labMode: LabMode
   domain: string
-  cacheRows: DnsCacheRecord[]
   cacheMatched: boolean
-  runStatus: DnsRunStatus
   tcpMode: TcpMode
   clientSeq: number
   serverSeq: number
@@ -394,185 +378,86 @@ function ExperimentInputs({
 }) {
   if (labMode === 'dns') {
     return (
-      <div className="mt-6 grid gap-3 lg:grid-cols-[1fr_auto_auto]">
+      <div className="grid gap-3 lg:grid-cols-[minmax(260px,1fr)_auto_auto]">
         <label className="block">
-          <span className="mb-2 block text-sm font-semibold text-slate-300">Domain input</span>
+          <span className="mb-1.5 block text-xs font-semibold text-slate-300">输入域名</span>
           <input
             value={domain}
             onChange={(event) => onDomainChange(event.target.value)}
-            className="h-12 w-full rounded-2xl border border-slate-700/60 bg-slate-950/60 px-4 font-mono-data text-sm tracking-normal text-cyan-50 outline-none transition focus:border-cyan-300/80"
+            className="h-11 w-full rounded-xl border border-slate-700/60 bg-slate-950/60 px-4 font-mono-data text-sm tracking-normal text-cyan-50 outline-none transition focus:border-cyan-300/80"
           />
         </label>
         <button
           type="button"
           onClick={onRunDnsQuery}
           className={cn(
-            'h-12 self-end rounded-2xl px-5 text-sm font-bold transition',
+            'h-11 self-end rounded-xl px-5 text-sm font-bold transition',
             cacheMatched
               ? 'border border-emerald-300/45 bg-emerald-300 text-slate-950 shadow-[0_0_24px_rgba(52,211,153,0.18)]'
               : 'border border-cyan-300/45 bg-cyan-300 text-slate-950 shadow-[0_0_24px_rgba(34,211,238,0.18)]',
           )}
         >
-          {cacheMatched ? 'Query cache hit' : 'Resolve domain'}
+          {cacheMatched ? '查看缓存结果' : '开始解析'}
         </button>
         <button
           type="button"
           onClick={onClearDnsCache}
-          className="h-12 self-end rounded-2xl border border-slate-700/60 bg-slate-950/60 px-4 text-sm font-bold text-slate-300 transition hover:border-rose-300/50 hover:text-rose-100"
+          className="h-11 self-end rounded-xl border border-slate-700/60 bg-slate-950/60 px-4 text-sm font-bold text-slate-300 transition hover:border-rose-300/50 hover:text-rose-100"
         >
-          Clear cache
+          清空缓存
         </button>
-        <div className="font-mono-data lg:col-span-3 text-xs uppercase tracking-[0.2em] text-slate-500">
-          Cache rows: {cacheRows.length} / Current lookup: {cacheMatched ? 'HIT' : 'MISS'} / Run: {runStatus}
-        </div>
       </div>
     )
   }
 
   return (
-    <div className="mt-6 grid gap-3 lg:grid-cols-[1.5fr_1fr_1fr]">
+    <div className="grid gap-3 lg:grid-cols-[1.45fr_1fr_1fr]">
       <div>
-        <span className="mb-2 block text-sm font-semibold text-slate-300">Connection action</span>
-        <div className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-700/60 bg-slate-950/60 p-1">
+        <span className="mb-1.5 block text-xs font-semibold text-slate-300">连接动作</span>
+        <div className="grid grid-cols-2 gap-1.5 rounded-xl border border-slate-700/60 bg-slate-950/60 p-1">
           <button
             type="button"
             onClick={() => onTcpModeChange('handshake')}
             className={cn(
-              'inline-flex h-10 items-center justify-center gap-2 rounded-xl text-sm font-bold transition',
+              'inline-flex h-9 items-center justify-center gap-2 rounded-lg text-sm font-bold transition',
               tcpMode === 'handshake' ? 'bg-violet-300 text-slate-950' : 'text-slate-300 hover:text-white',
             )}
           >
             <Link2 className="h-4 w-4" />
-            Establish
+            三次握手
           </button>
           <button
             type="button"
             onClick={() => onTcpModeChange('release')}
             className={cn(
-              'inline-flex h-10 items-center justify-center gap-2 rounded-xl text-sm font-bold transition',
+              'inline-flex h-9 items-center justify-center gap-2 rounded-lg text-sm font-bold transition',
               tcpMode === 'release' ? 'bg-amber-300 text-slate-950' : 'text-slate-300 hover:text-white',
             )}
           >
             <Unlink className="h-4 w-4" />
-            Release
+            四次挥手
           </button>
         </div>
       </div>
       <label className="block">
-        <span className="mb-2 block text-sm font-semibold text-slate-300">Client seq</span>
+        <span className="mb-1.5 block text-xs font-semibold text-slate-300">客户端 Seq</span>
         <input
           type="number"
           value={clientSeq}
           onChange={(event) => onClientSeqChange(Number(event.target.value))}
-          className="h-12 w-full rounded-2xl border border-slate-700/60 bg-slate-950/60 px-4 font-mono-data text-sm text-cyan-50 outline-none transition focus:border-cyan-300/80"
+          className="h-11 w-full rounded-xl border border-slate-700/60 bg-slate-950/60 px-4 font-mono-data text-sm text-cyan-50 outline-none transition focus:border-cyan-300/80"
         />
       </label>
       <label className="block">
-        <span className="mb-2 block text-sm font-semibold text-slate-300">Server seq</span>
+        <span className="mb-1.5 block text-xs font-semibold text-slate-300">服务器 Seq</span>
         <input
           type="number"
           value={serverSeq}
           onChange={(event) => onServerSeqChange(Number(event.target.value))}
-          className="h-12 w-full rounded-2xl border border-slate-700/60 bg-slate-950/60 px-4 font-mono-data text-sm text-cyan-50 outline-none transition focus:border-cyan-300/80"
+          className="h-11 w-full rounded-xl border border-slate-700/60 bg-slate-950/60 px-4 font-mono-data text-sm text-cyan-50 outline-none transition focus:border-cyan-300/80"
         />
       </label>
     </div>
-  )
-}
-
-function DnsCacheBoard({
-  rows,
-  currentDomain,
-  currentStep,
-  runStatus,
-  onDeleteRecord,
-}: {
-  rows: DnsCacheRecord[]
-  currentDomain: string
-  currentStep: SimulationStep
-  runStatus: DnsRunStatus
-  onDeleteRecord: (domain: string) => void
-}) {
-  const isUpdating = currentStep.id === 'dns-09'
-  const isLookup = currentStep.id === 'dns-01' || currentStep.id === 'dns-cache-hit'
-  const statusText = runStatus === 'completed'
-    ? 'resolution committed'
-    : runStatus === 'cache-hit'
-      ? 'cache hit complete'
-      : runStatus === 'reset'
-        ? 'run reset / no cache write'
-        : isUpdating
-          ? 'writing answer'
-          : isLookup
-            ? `checking ${currentDomain}`
-            : 'watching resolver'
-
-  return (
-    <section className="glass-panel rounded-3xl p-5">
-      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="font-mono-data mb-2 text-xs uppercase tracking-[0.32em] text-emerald-200">
-            DNS cache table
-          </div>
-          <h2 className="font-display text-2xl font-bold text-white">Lookup / update state</h2>
-        </div>
-        <div
-          className={cn(
-            'font-mono-data rounded-full border px-3 py-1.5 text-xs uppercase tracking-[0.18em]',
-            isUpdating
-              ? 'border-emerald-300/50 bg-emerald-300/15 text-emerald-100'
-              : isLookup
-                ? 'border-amber-300/50 bg-amber-300/15 text-amber-100'
-                : 'border-slate-700/60 bg-slate-950/50 text-slate-400',
-          )}
-        >
-          {statusText}
-        </div>
-      </div>
-      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/45">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-slate-900/80 text-xs uppercase tracking-[0.18em] text-slate-400">
-            <tr>
-              <th className="px-4 py-3 font-medium">Domain</th>
-              <th className="px-4 py-3 font-medium">IP</th>
-              <th className="px-4 py-3 font-medium">TTL</th>
-              <th className="px-4 py-3 font-medium">Source</th>
-              <th className="px-4 py-3 text-right font-medium">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-5 text-center text-slate-500">
-                  Cache table is empty. Resolve a domain once to insert a record.
-                </td>
-              </tr>
-            ) : (
-              rows.map((row) => {
-                const active = row.domain === currentDomain
-                return (
-                  <tr key={row.domain} className={cn('border-t border-slate-800/80', active && 'bg-cyan-300/8')}>
-                    <td className="font-mono-data px-4 py-3 text-cyan-50">{row.domain}</td>
-                    <td className="font-mono-data px-4 py-3 text-emerald-100">{row.ip}</td>
-                    <td className="font-mono-data px-4 py-3 text-slate-300">{row.ttl}</td>
-                    <td className="px-4 py-3 text-slate-400">{row.source}</td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => onDeleteRecord(row.domain)}
-                        className="rounded-xl border border-rose-300/30 bg-rose-300/10 px-3 py-1 text-xs font-bold text-rose-100 transition hover:bg-rose-300/20"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
-    </section>
   )
 }
 
@@ -672,32 +557,6 @@ function NodeMetric({ label, value }: { label: string; value: string }) {
     <div className="rounded-2xl border border-slate-800 bg-slate-950/45 p-4">
       <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{label}</div>
       <div className="font-mono-data mt-2 break-words text-sm text-cyan-50">{value}</div>
-    </div>
-  )
-}
-
-function RequirementStrip({ labMode, tcpMode }: { labMode: LabMode; tcpMode: TcpMode }) {
-  const items =
-    labMode === 'dns'
-      ? ['Client + DNS servers + domain input', 'DNS query path', 'Cache hit/miss', 'Final IP result', 'Cache table update']
-      : [
-          'Client + server',
-          tcpMode === 'handshake' ? 'Establish connection' : 'Release connection',
-          'SYN / ACK / FIN transfer',
-          'TCP state changes',
-          'Final connection result',
-        ]
-
-  return (
-    <div className="mt-5 flex flex-wrap gap-2">
-      {items.map((item) => (
-        <span
-          key={item}
-          className="font-mono-data rounded-full border border-slate-700/50 bg-slate-950/45 px-3 py-1.5 text-[11px] text-slate-300"
-        >
-          {item}
-        </span>
-      ))}
     </div>
   )
 }

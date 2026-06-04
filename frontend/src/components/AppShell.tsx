@@ -1,12 +1,6 @@
-import { ArrowLeft, Atom, BookOpen, Network } from 'lucide-react'
-import { Link, NavLink } from 'react-router-dom'
-import { cn } from '../lib/classNames'
-
-const links = [
-  { to: '/protocol-lab', label: 'Protocol Lab', icon: Atom },
-  { to: '/scenario', label: 'Scenario', icon: Network },
-  { to: '/knowledge', label: 'Knowledge', icon: BookOpen },
-]
+import { ArrowLeft } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { GooeyNav } from './VisualEffects'
 
 export function AppShell({ children, title }: { children: React.ReactNode; title: string }) {
   return (
@@ -17,25 +11,7 @@ export function AppShell({ children, title }: { children: React.ReactNode; title
             <ArrowLeft className="h-4 w-4" />
             Gateway
           </Link>
-          <div className="hidden items-center gap-2 md:flex">
-            {links.map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                className={({ isActive }) =>
-                  cn(
-                    'inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition',
-                    isActive
-                      ? 'border-cyan-300/60 bg-cyan-300/10 text-cyan-100'
-                      : 'border-slate-700/40 bg-slate-900/30 text-slate-300 hover:border-slate-500/70',
-                  )
-                }
-              >
-                <link.icon className="h-4 w-4" />
-                {link.label}
-              </NavLink>
-            ))}
-          </div>
+          <GooeyNav className="hidden md:block" />
           <div className="font-mono-data text-xs uppercase tracking-[0.28em] text-cyan-200">{title}</div>
         </div>
       </header>

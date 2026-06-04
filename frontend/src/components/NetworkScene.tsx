@@ -4,6 +4,8 @@ import { Suspense, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import type { SimulationStep, TopologyNode } from '../types/simulation'
 
+const SCENE_OFFSET = new THREE.Vector3(-1.72, -0.82, 0)
+
 interface NetworkSceneProps {
   nodes: TopologyNode[]
   step: SimulationStep
@@ -22,22 +24,25 @@ export function NetworkScene({
   selectedNodeId,
 }: NetworkSceneProps) {
   return (
-    <Canvas className="absolute inset-0 h-full w-full" camera={{ position: [-0.9, 5.25, 9.6], fov: 46 }} dpr={[1, 1.8]} gl={{ antialias: true }}>
+    <Canvas className="absolute inset-0 h-full w-full" camera={{ position: [-2.15, 5.55, 11.15], fov: 50 }} dpr={[1, 1.8]} gl={{ antialias: true }}>
       <color attach="background" args={['#05070d']} />
-      <fog attach="fog" args={['#05070d', 13, 32]} />
-      <ambientLight intensity={0.45} />
-      <pointLight position={[0, 5, 5]} intensity={18} color="#22d3ee" />
-      <pointLight position={[6, 2, -3]} intensity={10} color="#8b5cf6" />
-      <NetworkGrid />
-      <Suspense fallback={<TopologyFallback nodes={nodes} step={step} />}>
-        <Topology
-          nodes={nodes}
-          step={step}
-          selectedNodeId={selectedNodeId}
-          onNodeSelect={onNodeSelect}
-          onPacketSelect={onPacketSelect}
-        />
-      </Suspense>
+      <fog attach="fog" args={['#05070d', 18, 44]} />
+      <ambientLight intensity={0.78} />
+      <pointLight position={[-3, 5.6, 5.5]} intensity={30} color="#22d3ee" />
+      <pointLight position={[6, 2.8, -3]} intensity={18} color="#8b5cf6" />
+      <pointLight position={[-7, 1.2, -2]} intensity={12} color="#34d399" />
+      <group position={SCENE_OFFSET}>
+        <NetworkGrid />
+        <Suspense fallback={<TopologyFallback nodes={nodes} step={step} />}>
+          <Topology
+            nodes={nodes}
+            step={step}
+            selectedNodeId={selectedNodeId}
+            onNodeSelect={onNodeSelect}
+            onPacketSelect={onPacketSelect}
+          />
+        </Suspense>
+      </group>
       <CameraRig nodes={nodes} step={step} focusNonce={focusNonce} />
       <OrbitControls makeDefault enablePan maxDistance={18} minDistance={4.8} />
     </Canvas>
@@ -444,17 +449,17 @@ function CameraRig({ nodes, step, focusNonce }: { nodes: TopologyNode[]; step: S
   useFrame(({ camera }) => {
     if (performance.now() > focusUntil.current) return
     if (step.visualMode === 'local-scan') {
-      const focus = new THREE.Vector3(-2.95, 0.05, -0.18)
-      const desired = new THREE.Vector3(-3.0, 4.15, 8.4)
+      const focus = new THREE.Vector3(-2.95, 0.05, -0.18).add(SCENE_OFFSET)
+      const desired = new THREE.Vector3(-4.45, 4.25, 10.05)
       camera.position.lerp(desired, 0.028)
       camera.lookAt(focus)
       return
     }
     if (!target) return
-    const targetFocus = new THREE.Vector3(...target.position)
-    const overviewCenter = new THREE.Vector3(-1.25, 0, -0.55)
+    const targetFocus = new THREE.Vector3(...target.position).add(SCENE_OFFSET)
+    const overviewCenter = new THREE.Vector3(-2.65, -0.82, -0.55)
     const focus = targetFocus.lerp(overviewCenter, 0.68)
-    const desired = focus.clone().add(new THREE.Vector3(-0.35, 4.85, 9.2))
+    const desired = focus.clone().add(new THREE.Vector3(-0.85, 5.0, 10.65))
     camera.position.lerp(desired, 0.018)
     camera.lookAt(focus)
   })

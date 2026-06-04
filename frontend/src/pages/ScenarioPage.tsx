@@ -54,9 +54,9 @@ export function ScenarioPage() {
               onPacketSelect={() => setDockMode('flow')}
             />
           </div>
-          <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_52%_50%,transparent_0%,rgba(5,7,13,0.12)_46%,rgba(5,7,13,0.88)_100%)]" />
-          <div className="pointer-events-none absolute inset-0 z-[2] bg-[linear-gradient(90deg,rgba(5,7,13,0.95)_0%,rgba(5,7,13,0.50)_28%,transparent_52%,rgba(5,7,13,0.78)_100%)]" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] h-56 bg-gradient-to-t from-[#05070d] via-[#05070d]/82 to-transparent" />
+          <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_42%_56%,transparent_0%,rgba(5,7,13,0.08)_48%,rgba(5,7,13,0.74)_100%)]" />
+          <div className="pointer-events-none absolute inset-0 z-[2] bg-[linear-gradient(90deg,rgba(5,7,13,0.86)_0%,rgba(5,7,13,0.36)_26%,transparent_55%,rgba(5,7,13,0.66)_100%)]" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] h-48 bg-gradient-to-t from-[#05070d] via-[#05070d]/62 to-transparent" />
 
           <div className="pointer-events-none relative z-10 flex min-h-[calc(100vh-4rem)] w-full flex-col px-6 py-8 xl:px-12">
             <header className="pointer-events-auto flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -81,7 +81,7 @@ export function ScenarioPage() {
             <div className="pointer-events-auto mt-6">
               <Timeline steps={steps} current={index} onSelect={setIndex} />
             </div>
-            <div className="pointer-events-auto mt-3 flex justify-start">
+            <div className="pointer-events-auto mt-3 flex justify-end">
               <PlaybackControls
                 current={index}
                 total={steps.length}
@@ -98,8 +98,8 @@ export function ScenarioPage() {
               />
             </div>
 
-            <div className="mt-6 grid flex-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-              <div className="relative min-h-[470px]">
+            <div className="mt-10 grid flex-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+              <div className="relative min-h-[500px]">
                 <div className="pointer-events-none absolute left-0 top-0 rounded-2xl border border-slate-700/60 bg-slate-950/65 px-4 py-3 backdrop-blur-md">
                   <div className="font-mono-data text-xs uppercase tracking-[0.3em] text-slate-500">当前报文</div>
                   <div className="font-display mt-1 text-lg font-bold text-white">{currentStep.packetType}</div>
