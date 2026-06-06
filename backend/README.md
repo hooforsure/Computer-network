@@ -23,9 +23,16 @@ cd backend
 
 Default connection values:
 
-- URL: `jdbc:mysql://localhost:3306/netverse_lab`
+- URL: `jdbc:mysql://localhost:3307/netverse_lab`
 - username: `root`
-- password: `root`
+- password: read from `NETVERSE_DB_PASSWORD`; set it locally and do not commit it
+
+Create a local `.env` from the root example before running Docker Compose:
+
+```powershell
+cd ..
+Copy-Item .env.example .env
+```
 
 Start the backend and Flyway will apply:
 
@@ -60,7 +67,7 @@ mvn spring-boot:run
 Health check:
 
 ```http
-GET http://localhost:8080/api/health
+GET http://localhost:18083/api/health
 ```
 
 ## Main APIs
