@@ -3,8 +3,8 @@ import { cn } from '../lib/classNames'
 
 const nodeLabels: Record<string, string> = {
   client: '主机 / 浏览器',
-  cache: '本地缓存',
-  localDns: '本地 DNS',
+  cache: '主机缓存',
+  localDns: '本地 DNS 服务器',
   rootDns: '根 DNS',
   tldDns: '顶级域 DNS',
   authDns: '权威 DNS',
@@ -18,6 +18,15 @@ const nodeLabels: Record<string, string> = {
   switch: '交换机 S',
   router: '路由器 R',
   web: '外网 Web',
+}
+
+function protocolAccent(protocol: string, packetType: string) {
+  const text = `${protocol} ${packetType}`.toUpperCase()
+  if (text.includes('ARP')) return '#34d399'
+  if (text.includes('HTTP')) return '#f59e0b'
+  if (text.includes('TCP') || text.includes('SYN') || text.includes('ACK') || text.includes('FIN')) return '#8b5cf6'
+  if (text.includes('DNS')) return '#22d3ee'
+  return '#67e8f9'
 }
 
 const fieldLabels: Record<string, string> = {
@@ -111,9 +120,13 @@ export function SimulationInspector({ step }: { step: SimulationStep }) {
   const packetSummary = formatPacketSummary(step)
 
   return (
-    <aside className="glass-panel scanline h-full overflow-hidden rounded-3xl p-5">
-      <div>
-        <div className="mb-3 flex items-center justify-between gap-3">
+    <aside
+      key={step.id}
+      className="simulation-inspector scanline h-full overflow-hidden border border-slate-800/80 bg-slate-950/78 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl"
+      style={{ '--inspector-accent': protocolAccent(step.protocol, step.packetType) } as React.CSSProperties}
+    >
+      <header>
+        <div className="mb-4 flex items-center gap-2">
           <span className="font-mono-data rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-xs text-cyan-100">
             {step.protocol}
           </span>
@@ -127,27 +140,33 @@ export function SimulationInspector({ step }: { step: SimulationStep }) {
             {step.broadcast ? '广播' : step.direction === 'local' ? '本地' : '单播'}
           </span>
         </div>
-        <h2 className="font-display text-2xl font-bold text-slate-50">{step.title}</h2>
+        <h2 className="font-display text-3xl font-bold leading-tight text-slate-50">{step.title}</h2>
         <p className="mt-3 text-sm leading-6 text-slate-300">{packetSummary}</p>
-      </div>
+      </header>
 
-      <section className="mt-5 rounded-2xl border border-cyan-300/20 bg-cyan-300/8 p-4">
-        <div className="font-mono-data mb-2 text-xs uppercase tracking-[0.22em] text-cyan-200">通信方向</div>
-        <div className="font-display break-words text-xl font-bold text-white">{directionText}</div>
-        <p className="mt-2 text-sm leading-6 text-slate-300">{step.explanation}</p>
+      <section className="mt-6 border-t border-slate-800/80 pt-5">
+        <div className="grid gap-2">
+          <div className="font-mono-data text-xs uppercase tracking-[0.22em] text-cyan-200">通信方向</div>
+          <div className="font-display break-words text-2xl font-bold text-white">{directionText}</div>
+          <p className="text-sm leading-6 text-slate-300">{step.explanation}</p>
+        </div>
       </section>
 
-      <section className="mt-5 rounded-2xl border border-slate-700/40 bg-slate-950/40 p-4">
+      <section className="mt-6 border-t border-slate-800/80 pt-5">
         <h3 className="mb-3 text-sm font-semibold text-slate-100">报文核心字段</h3>
-        <div className="space-y-2.5">
-          {fieldRows.map(([key, value]) => (
-            <div key={key} className="grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] items-center gap-3 rounded-xl border border-slate-800/70 bg-slate-950/35 px-3 py-2 text-sm">
+        <div className="divide-y divide-slate-800/80 border-y border-slate-800/80">
+          {fieldRows.map(([key, value], index) => (
+            <div
+              key={key}
+              className="packet-field-row grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] items-center gap-3 py-3 text-sm"
+              style={{ '--field-delay': `${index * 46}ms` } as React.CSSProperties}
+            >
               <span className="truncate text-slate-400">{fieldLabels[key] ?? key}</span>
               <span className="font-mono-data break-words text-right text-cyan-100">{String(value ?? '-')}</span>
             </div>
           ))}
           {fieldRows.length === 0 && (
-            <div className="rounded-xl border border-slate-800/70 bg-slate-950/35 px-3 py-3 text-center text-sm text-slate-500">
+            <div className="py-3 text-center text-sm text-slate-500">
               当前步骤没有需要展开的报文字段
             </div>
           )}
@@ -155,14 +174,14 @@ export function SimulationInspector({ step }: { step: SimulationStep }) {
       </section>
 
       {(step.clientState || step.serverState) && (
-        <section className="mt-5 rounded-2xl border border-slate-700/40 bg-slate-950/40 p-4">
+        <section className="mt-6 border-t border-slate-800/80 pt-5">
           <h3 className="mb-3 text-sm font-semibold text-slate-100">TCP 状态</h3>
           <div className="mb-4 grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-violet-300/20 bg-violet-300/10 p-4">
+            <div className="border-l border-violet-300/40 pl-4">
               <div className="text-xs text-violet-200">客户端</div>
               <div className="font-mono-data mt-2 text-sm text-white">{step.clientState ?? '-'}</div>
             </div>
-            <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4">
+            <div className="border-l border-cyan-300/40 pl-4">
               <div className="text-xs text-cyan-200">服务器</div>
               <div className="font-mono-data mt-2 text-sm text-white">{step.serverState ?? '-'}</div>
             </div>
@@ -188,12 +207,12 @@ export function SimulationInspector({ step }: { step: SimulationStep }) {
         </section>
       )}
 
-      {step.tables?.map((table) => (
-        <section key={table.label} className="mt-5 rounded-2xl border border-slate-700/40 bg-slate-950/40 p-4">
+      {step.protocol !== 'DNS' && step.tables?.map((table) => (
+        <section key={table.label} className="mt-6 border-t border-slate-800/80 pt-5">
           <h3 className="mb-3 text-sm font-semibold text-slate-100">{formatTableLabel(table.label)}</h3>
-          <div className="overflow-hidden rounded-xl border border-slate-800">
+          <div className="overflow-x-auto border-y border-slate-800">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-900/80 text-slate-400">
+              <thead className="text-slate-400">
                 <tr>
                   {table.columns.map((column) => (
                     <th key={column} className="px-3 py-2 font-medium">
@@ -211,7 +230,7 @@ export function SimulationInspector({ step }: { step: SimulationStep }) {
                   </tr>
                 ) : (
                   table.rows.map((row, index) => (
-                    <tr key={`${table.label}-${index}`} className="border-t border-slate-800/80">
+                    <tr key={`${table.label}-${index}`} className="live-table-row border-t border-slate-800/80">
                       {table.columns.map((column) => (
                         <td key={column} className="font-mono-data px-2 py-2 text-[11px] text-cyan-50">
                           {row[column]}
@@ -251,7 +270,7 @@ function formatPacketSummary(step: SimulationStep) {
 }
 
 function formatTableLabel(label: string) {
-  if (label === 'DNS Cache') return 'DNS 缓存表'
+  if (label === 'DNS Cache' || label === 'Local DNS Resolver Cache') return '本地 DNS 服务器缓存表'
   if (label === 'H1 ARP Table') return 'H1 ARP 表'
   if (label === 'Switch S MAC Table') return '交换机 S MAC 表'
   return label

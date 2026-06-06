@@ -1,9 +1,12 @@
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Html, Line, OrbitControls } from '@react-three/drei'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Database, Pencil, Plus, Save, Search, Trash2, X } from 'lucide-react'
+import { Pencil, Plus, Save, Search, Trash2, X } from 'lucide-react'
 import * as THREE from 'three'
 import { AppShell } from '../components/AppShell'
+import { NetVerseMagicBento } from '../components/NetVerseMagicBento'
+import { ModuleSignalHeading } from '../components/VisualEffects'
+import { deleteKnowledgePoint, fetchKnowledgePoints, saveKnowledgePoint } from '../api/netverseApi'
 import { cn } from '../lib/classNames'
 
 type KnowledgeLayer = '应用层' | '传输层' | '网络层' | '数据链路层' | '物理层'
@@ -126,6 +129,21 @@ export function KnowledgeAtlasPage() {
     localStorage.setItem(storageKey, JSON.stringify(points))
   }, [points])
 
+  useEffect(() => {
+    let cancelled = false
+    fetchKnowledgePoints()
+      .then((apiPoints) => {
+        if (cancelled || apiPoints.length === 0) return
+        setPoints(apiPoints)
+        setSelectedId(apiPoints[0].id)
+        setSelectedNodeId(apiPoints[0].id)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const filtered = useMemo(() => {
     const keyword = query.trim().toLowerCase()
     return points.filter((item) => {
@@ -163,19 +181,37 @@ export function KnowledgeAtlasPage() {
     })
   }
 
-  function savePoint(pointToSave: KnowledgePoint) {
-    setPoints((rows) => {
-      const exists = rows.some((item) => item.id === pointToSave.id)
-      return exists
-        ? rows.map((item) => (item.id === pointToSave.id ? pointToSave : item))
-        : [pointToSave, ...rows]
-    })
-    setSelectedId(pointToSave.id)
-    setActiveTab(pointToSave.layer)
-    setEditing(null)
+  async function savePoint(pointToSave: KnowledgePoint) {
+    const exists = points.some((item) => item.id === pointToSave.id)
+    try {
+      const saved = await saveKnowledgePoint(pointToSave, exists)
+      setPoints((rows) => {
+        const alreadyExists = rows.some((item) => item.id === saved.id)
+        return alreadyExists
+          ? rows.map((item) => (item.id === saved.id ? saved : item))
+          : [saved, ...rows]
+      })
+      setSelectedId(saved.id)
+      setActiveTab(saved.layer)
+    } catch {
+      setPoints((rows) => {
+        return exists
+          ? rows.map((item) => (item.id === pointToSave.id ? pointToSave : item))
+          : [pointToSave, ...rows]
+      })
+      setSelectedId(pointToSave.id)
+      setActiveTab(pointToSave.layer)
+    } finally {
+      setEditing(null)
+    }
   }
 
-  function deletePoint(id: string) {
+  async function deletePoint(id: string) {
+    try {
+      await deleteKnowledgePoint(id)
+    } catch {
+      // Keep the UI usable even if the backend is temporarily unavailable.
+    }
     setPoints((rows) => rows.filter((item) => item.id !== id))
     if (selectedId === id) setSelectedId(points.find((item) => item.id !== id)?.id ?? '')
   }
@@ -186,54 +222,40 @@ export function KnowledgeAtlasPage() {
         <section className="relative h-[calc(100vh-4rem)] min-h-[760px] overflow-hidden max-lg:h-auto max-lg:min-h-[900px]">
           <KnowledgeGraph3D
             graph={graph}
-            selectedId={selectedId}
+            selectedId={selectedNodeId}
             onSelect={(node) => {
               setSelectedNodeId(node.id)
               if (node.point) selectPoint(node.point)
               if (node.layer) setActiveTab(node.layer)
             }}
           />
-          <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_50%_44%,transparent_0%,rgba(5,7,13,0.14)_45%,rgba(5,7,13,0.82)_100%)]" />
-          <div className="pointer-events-none absolute inset-0 z-[2] bg-[linear-gradient(90deg,rgba(5,7,13,0.94)_0%,rgba(5,7,13,0.42)_28%,transparent_48%,rgba(5,7,13,0.58)_78%,rgba(5,7,13,0.94)_100%)]" />
+          <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_54%_48%,transparent_0%,rgba(5,7,13,0.06)_54%,rgba(5,7,13,0.7)_100%)]" />
+          <div className="pointer-events-none absolute inset-0 z-[2] bg-[linear-gradient(90deg,rgba(5,7,13,0.9)_0%,rgba(5,7,13,0.24)_24%,transparent_54%,rgba(5,7,13,0.26)_72%,rgba(5,7,13,0.86)_100%)]" />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] h-48 bg-gradient-to-t from-[#05070d] via-[#05070d]/80 to-transparent" />
-          <GraphLabelOverlay graph={graph} />
-
           <div className="absolute left-5 top-8 z-10 max-w-4xl sm:left-8 xl:left-12">
-            <div className="font-mono-data mb-4 text-xs uppercase tracking-[0.45em] text-emerald-200">
-              TCP/IP 五层知识体系
-            </div>
-            <h1 className="font-display max-w-3xl text-5xl font-extrabold leading-none text-white drop-shadow-[0_0_28px_rgba(34,211,238,0.14)] sm:text-7xl">
-              网络知识宇宙
-            </h1>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
-              3D 图谱直接映射五层模型、协议、设备、数据单位和知识点。点击发光节点即可切换到对应卡片详情，下方继续进行查询、分页和 CRUD 管理。
-            </p>
+            <ModuleSignalHeading
+              eyebrow="TCP/IP 五层知识体系"
+              title="网络知识宇宙"
+              accent="emerald"
+            />
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <button
                 type="button"
                 onClick={() => createPoint(activeLayer)}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-emerald-300 px-5 text-sm font-bold text-slate-950 shadow-[0_0_34px_rgba(52,211,153,0.26)] transition hover:bg-emerald-200"
+                className="inline-flex h-12 min-w-[142px] shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-emerald-300/50 bg-emerald-300 px-5 text-sm font-bold leading-none text-slate-950 shadow-[0_0_34px_rgba(52,211,153,0.26)] transition hover:bg-emerald-200"
               >
-                <Plus className="h-4 w-4" />
-                新增知识点
+                <Plus className="h-4 w-4 shrink-0" />
+                <span className="whitespace-nowrap leading-none">新增知识点</span>
               </button>
-              <a
+              <NetVerseMagicBento
+                as="a"
                 href="#knowledge-stack"
+                accent="#22d3ee"
                 className="inline-flex h-12 items-center justify-center rounded-full border border-slate-500/50 bg-slate-950/35 px-5 text-sm font-semibold text-slate-100 backdrop-blur-md transition hover:border-cyan-300/70"
               >
                 查看五层知识库
-              </a>
+              </NetVerseMagicBento>
             </div>
-          </div>
-
-          <div className="pointer-events-none absolute left-5 top-[23rem] z-10 rounded-2xl border border-slate-700/60 bg-slate-950/55 px-4 py-3 backdrop-blur-md sm:left-8 xl:left-12">
-            <div className="font-mono-data text-xs uppercase tracking-[0.3em] text-slate-500">三维知识图谱</div>
-            <div className="font-display mt-1 text-lg font-bold text-white">鼠标旋转 / 缩放 / 点击节点聚焦</div>
-          </div>
-          <div className="absolute bottom-10 left-5 z-10 hidden max-w-xl grid-cols-3 gap-3 lg:grid xl:left-12">
-            <Metric label="知识点" value={`${points.length} 个`} />
-            <Metric label="分层结构" value="应用 → 传输 → 网络 → 数据链路 → 物理" />
-            <Metric label="数据来源" value="当前为本地模拟，后续接后端 CRUD" />
           </div>
           <div className="absolute right-5 top-10 z-10 hidden w-[390px] xl:right-12 xl:block">
             <GraphDetailPanel selected={selected} selectedNode={selectedNode} />
@@ -260,10 +282,6 @@ export function KnowledgeAtlasPage() {
                   placeholder="查询知识点、协议、设备或关键字..."
                 />
               </label>
-              <div className="flex items-center gap-2 rounded-2xl border border-slate-700/60 bg-slate-950/50 px-4 py-3">
-                <Database className="h-4 w-4 text-emerald-200" />
-                <span className="text-sm text-slate-300">本地数据模拟数据库，后端接入后替换为接口 CRUD。</span>
-              </div>
             </div>
 
             <LayerOpenSection
@@ -294,34 +312,6 @@ export function KnowledgeAtlasPage() {
   )
 }
 
-function GraphLabelOverlay({ graph }: { graph: ReturnType<typeof createGraph> }) {
-  const labels = graph.nodes.filter((node) => node.type === 'root' || node.type === 'layer')
-
-  return (
-    <div className="pointer-events-none absolute inset-0 z-[6]">
-      {labels.map((node) => (
-        <div
-          key={node.id}
-          className="absolute rounded-xl border bg-slate-950/72 px-3 py-1.5 font-mono-data text-xs text-slate-100 shadow-[0_0_20px_rgba(34,211,238,0.14)] backdrop-blur-md"
-          style={{ ...labelPosition(node), borderColor: node.accent }}
-        >
-          {node.label}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function labelPosition(node: GraphNode): React.CSSProperties {
-  if (node.type === 'root') return { left: '48%', top: '14%' }
-  const index = layerProfiles.findIndex((profile) => profile.layer === node.layer)
-  return {
-    left: '50%',
-    top: `${27 + index * 10}%`,
-    transform: 'translateX(-50%)',
-  }
-}
-
 function KnowledgeGraph3D({
   graph,
   selectedId,
@@ -332,16 +322,16 @@ function KnowledgeGraph3D({
   onSelect: (node: GraphNode) => void
 }) {
   return (
-    <Canvas className="absolute inset-0 h-full w-full" camera={{ position: [0, 2.65, 12.2], fov: 45 }} dpr={[1, 1.8]} gl={{ antialias: true }}>
+    <Canvas className="absolute inset-0 z-0 h-full w-full" camera={{ position: [0, 2.2, 12.8], fov: 58 }} dpr={[1, 1.8]} gl={{ antialias: true }}>
       <color attach="background" args={['#05070d']} />
-      <fog attach="fog" args={['#05070d', 12, 26]} />
-      <ambientLight intensity={0.5} />
-      <pointLight position={[0, 5, 4]} intensity={18} color="#34d399" />
-      <pointLight position={[7, 1, -6]} intensity={10} color="#22d3ee" />
+      <fog attach="fog" args={['#05070d', 26, 62]} />
+      <ambientLight intensity={0.8} />
+      <pointLight position={[0, 7, 7]} intensity={30} color="#34d399" />
+      <pointLight position={[8, 2, -4]} intensity={18} color="#22d3ee" />
       <GraphStage />
       <GraphConstellation graph={graph} selectedId={selectedId} onSelect={onSelect} />
       <GraphCameraRig />
-      <OrbitControls makeDefault enablePan maxDistance={24} minDistance={6.2} />
+      <OrbitControls makeDefault enablePan maxDistance={42} minDistance={5.8} />
     </Canvas>
   )
 }
@@ -349,24 +339,28 @@ function KnowledgeGraph3D({
 function GraphStage() {
   return (
     <group>
-      <gridHelper args={[15, 20, '#14532d', '#102033']} position={[0, -2.85, 0]} />
-      <mesh position={[0, -2.88, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[17, 11]} />
+      <gridHelper args={[28, 28, '#14532d', '#102033']} position={[0, -5.85, 0]} />
+      <mesh position={[0, -5.88, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[32, 22]} />
         <meshBasicMaterial color="#05070d" transparent opacity={0.32} />
       </mesh>
-      {[1.1, 2.1, 3.1].map((radius) => (
+      {[2.2, 4.2, 6.2].map((radius) => (
         <mesh key={radius} position={[0, 1.45, 0]} rotation={[Math.PI / 2, 0, 0]}>
           <torusGeometry args={[radius, 0.008, 8, 96]} />
           <meshBasicMaterial color="#34d399" transparent opacity={0.22} />
         </mesh>
       ))}
+      <mesh position={[1.25, -0.4, 0]}>
+        <sphereGeometry args={[0.2, 32, 32]} />
+        <meshBasicMaterial color="#67e8f9" />
+      </mesh>
     </group>
   )
 }
 
 function GraphCameraRig() {
   useFrame(({ camera }) => {
-    camera.lookAt(0, -0.2, 0)
+    camera.lookAt(0.8, -0.8, 0)
   })
 
   return null
@@ -390,7 +384,7 @@ function GraphConstellation({
   })
 
   return (
-    <group ref={group}>
+    <group ref={group} position={[1.25, -0.4, 0]}>
       {graph.links.map((link) => {
         const source = nodeMap.get(link.source)
         const target = nodeMap.get(link.target)
@@ -401,8 +395,8 @@ function GraphConstellation({
             points={[source.position, target.position]}
             color="#64748b"
             transparent
-            opacity={0.72}
-            lineWidth={1.6}
+            opacity={0.48}
+            lineWidth={1.25}
           />
         )
       })}
@@ -429,7 +423,7 @@ function KnowledgeGraphNode({
 }) {
   const ref = useRef<THREE.Group>(null)
   const [hovered, setHovered] = useState(false)
-  const radius = node.type === 'root' ? 0.58 : node.type === 'layer' ? 0.42 : node.type === 'concept' ? 0.24 : 0.19
+  const radius = node.type === 'root' ? 0.72 : node.type === 'layer' ? 0.54 : node.type === 'concept' ? 0.3 : 0.24
 
   useFrame(({ clock }) => {
     if (!ref.current) return
@@ -457,7 +451,7 @@ function KnowledgeGraphNode({
     >
       <mesh>
         <sphereGeometry args={[radius, 36, 36]} />
-        <meshStandardMaterial color={node.accent} emissive={node.accent} emissiveIntensity={selected ? 2.2 : hovered ? 1.45 : 0.75} roughness={0.28} metalness={0.35} />
+        <meshStandardMaterial color={node.accent} emissive={node.accent} emissiveIntensity={selected ? 3.4 : hovered ? 2.2 : 1.3} roughness={0.22} metalness={0.28} />
       </mesh>
       {(node.type === 'root' || node.type === 'layer' || selected || hovered) && (
         <mesh rotation={[Math.PI / 2, 0, 0]}>
@@ -465,9 +459,19 @@ function KnowledgeGraphNode({
           <meshBasicMaterial color={node.accent} transparent opacity={selected ? 0.95 : hovered ? 0.82 : 0.52} />
         </mesh>
       )}
-      {(selected || hovered) && (
+      {node.type !== 'root' && node.type !== 'layer' && (selected || hovered) && (
         <Html distanceFactor={10} position={[0, radius + 0.22, 0]} center>
-          <div className="pointer-events-none max-w-[170px] rounded-xl border border-emerald-300/50 bg-slate-950/85 px-3 py-1.5 text-center text-xs font-bold text-emerald-50 shadow-[0_0_28px_rgba(52,211,153,0.24)] backdrop-blur-md">
+          <div className="pointer-events-none max-w-[260px] whitespace-nowrap rounded-xl border border-emerald-300/50 bg-slate-950/85 px-3 py-1.5 text-center text-xs font-bold text-emerald-50 shadow-[0_0_28px_rgba(52,211,153,0.24)] backdrop-blur-md">
+            {node.label}
+          </div>
+        </Html>
+      )}
+      {(node.type === 'root' || node.type === 'layer') && (
+        <Html distanceFactor={12} position={[0, radius + 0.5, 0]} center>
+          <div
+            className="pointer-events-none whitespace-nowrap rounded-xl border bg-slate-950/80 px-3 py-1.5 text-center font-mono-data text-xs font-bold text-slate-50 shadow-[0_0_24px_rgba(34,211,238,0.2)] backdrop-blur-md"
+            style={{ borderColor: node.accent }}
+          >
             {node.label}
           </div>
         </Html>
@@ -484,7 +488,7 @@ function GraphDetailPanel({ selected, selectedNode }: { selected?: KnowledgePoin
   const panelDetail = selectedNode?.point?.detail ?? graphNodeDetail(selectedNode)
 
   return (
-    <aside className="rounded-[2rem] border border-slate-800 bg-slate-950/74 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.32)] backdrop-blur-md">
+    <NetVerseMagicBento as="aside" accent={selectedNode?.accent ?? '#34d399'} className="rounded-[2rem] border border-slate-800 bg-slate-950/74 p-5 shadow-[0_24px_70px_rgba(0,0,0,0.32)] backdrop-blur-md">
       <div className="font-mono-data mb-2 text-xs uppercase tracking-[0.3em] text-emerald-200">节点详情</div>
       <h2 className="font-display text-2xl font-bold text-white">{panelTitle}</h2>
       <div className="mt-4 grid gap-3">
@@ -492,10 +496,10 @@ function GraphDetailPanel({ selected, selectedNode }: { selected?: KnowledgePoin
         <Metric label="分类" value={panelCategory} />
         <Metric label="摘要" value={panelSummary} />
       </div>
-      <p className="mt-4 rounded-2xl border border-slate-800 bg-slate-950/45 p-4 text-sm leading-6 text-slate-300">
+      <NetVerseMagicBento className="mt-4 rounded-2xl border border-slate-800 bg-slate-950/45 p-4 text-sm leading-6 text-slate-300" accent={selectedNode?.accent ?? '#34d399'}>
         {panelDetail}
-      </p>
-    </aside>
+      </NetVerseMagicBento>
+    </NetVerseMagicBento>
   )
 }
 
@@ -541,15 +545,16 @@ function FiveLayerRail({ activeTab, onSelect }: { activeTab: KnowledgeTab; onSel
       <div className="mb-4 px-1">
         <div className="font-mono-data text-xs uppercase tracking-[0.3em] text-slate-500">TCP/IP STACK</div>
         <h2 className="font-display mt-2 text-3xl font-bold text-white">五层纵向模型</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-400">从用户应用一路下沉到比特传输，点击任一层切换本层知识点。</p>
       </div>
       <div className="relative">
-        <div className="absolute left-1/2 top-8 h-[calc(100%-6rem)] w-px -translate-x-1/2 bg-gradient-to-b from-cyan-300 via-emerald-300 to-slate-500/40" />
         {layerProfiles.map((profile, index) => (
-          <button
+          <NetVerseMagicBento
             key={profile.layer}
+            as="button"
             type="button"
             onClick={() => onSelect(profile.layer)}
+            accent={profile.accent}
+            active={activeTab === profile.layer}
             className={cn(
               'group relative mb-3 w-full overflow-hidden rounded-[1.55rem] border p-4 text-left transition duration-300 hover:-translate-y-0.5',
               activeTab === profile.layer
@@ -557,30 +562,17 @@ function FiveLayerRail({ activeTab, onSelect }: { activeTab: KnowledgeTab; onSel
                 : 'border-slate-800/80 bg-slate-950/42 hover:border-slate-600 hover:bg-slate-950/70',
             )}
           >
-            <div className="absolute inset-y-0 left-0 w-1 opacity-90" style={{ background: profile.accent }} />
-            <div className="mb-2 flex items-center gap-3">
-              <span className="font-mono-data flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border bg-slate-950 text-xs" style={{ borderColor: profile.accent, color: profile.accent }}>
+            <div className="flex min-w-0 items-center justify-between gap-4">
+              <div className="min-w-0">
+                <div className="font-display text-lg font-bold text-white">{profile.layer}</div>
+                <div className="font-mono-data mt-1 truncate text-[10px] uppercase tracking-[0.16em] text-slate-500">{profile.dataUnit}</div>
+              </div>
+              <span className="font-mono-data flex h-8 min-w-8 shrink-0 items-center justify-center rounded-full border bg-slate-950/70 text-[10px]" style={{ borderColor: profile.accent, color: profile.accent }}>
                 L{index + 1}
               </span>
-              <div>
-                <div className="font-display text-lg font-bold text-white">{profile.layer}</div>
-                <div className="font-mono-data text-[10px] uppercase tracking-[0.16em] text-slate-500">{profile.dataUnit}</div>
-              </div>
             </div>
-            <p className="line-clamp-2 text-xs leading-5 text-slate-400">{profile.functionText}</p>
-          </button>
+          </NetVerseMagicBento>
         ))}
-        <button
-          type="button"
-          onClick={() => onSelect('知识图谱')}
-          className={cn(
-            'w-full rounded-[1.55rem] border bg-slate-950/50 p-4 text-left transition hover:-translate-y-0.5 hover:bg-slate-950/75',
-            activeTab === '知识图谱' ? 'border-cyan-300/70' : 'border-slate-800 hover:border-slate-600',
-          )}
-        >
-          <div className="font-display text-lg font-bold text-white">知识图谱</div>
-          <p className="mt-1 text-xs leading-5 text-slate-400">查看整体层次关系和节点详情。</p>
-        </button>
       </div>
     </aside>
   )
@@ -642,7 +634,9 @@ function LayerOpenSection({
 
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         {points.length === 0 ? (
-          <div className="md:col-span-2 rounded-3xl border border-slate-800 bg-slate-950/45 p-10 text-center text-slate-500">当前筛选条件下没有知识点。</div>
+          <NetVerseMagicBento className="md:col-span-2 rounded-3xl border border-slate-800 bg-slate-950/45 p-10 text-center text-slate-500" accent={profile.accent}>
+            当前筛选条件下没有知识点。
+          </NetVerseMagicBento>
         ) : (
           points.map((item) => (
             <KnowledgeCard
@@ -659,9 +653,9 @@ function LayerOpenSection({
       </div>
 
       <div className="mt-5 flex items-center justify-between">
-        <button type="button" disabled={page <= 1} onClick={() => onPageChange(page - 1)} className="rounded-2xl border border-slate-700/70 bg-slate-950/45 px-4 py-2 text-sm font-bold text-slate-300 transition hover:border-emerald-300/50 hover:text-white disabled:cursor-not-allowed disabled:opacity-35">上一页</button>
+        <NetVerseMagicBento as="button" type="button" disabled={page <= 1} onClick={() => onPageChange(page - 1)} accent={profile.accent} className="rounded-2xl border border-slate-700/70 bg-slate-950/45 px-4 py-2 text-sm font-bold text-slate-300 transition hover:border-emerald-300/50 hover:text-white disabled:cursor-not-allowed disabled:opacity-35">上一页</NetVerseMagicBento>
         <span className="font-mono-data text-sm text-emerald-100">{page} / {totalPages}</span>
-        <button type="button" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)} className="rounded-2xl border border-slate-700/70 bg-slate-950/45 px-4 py-2 text-sm font-bold text-slate-300 transition hover:border-emerald-300/50 hover:text-white disabled:cursor-not-allowed disabled:opacity-35">下一页</button>
+        <NetVerseMagicBento as="button" type="button" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)} accent={profile.accent} className="rounded-2xl border border-slate-700/70 bg-slate-950/45 px-4 py-2 text-sm font-bold text-slate-300 transition hover:border-emerald-300/50 hover:text-white disabled:cursor-not-allowed disabled:opacity-35">下一页</NetVerseMagicBento>
       </div>
     </section>
   )
@@ -683,8 +677,11 @@ function KnowledgeCard({
   onDelete: () => void
 }) {
   return (
-    <article
+    <NetVerseMagicBento
+      as="article"
       onClick={onSelect}
+      accent={accent}
+      active={active}
       className={cn(
         'group relative cursor-pointer overflow-hidden rounded-[1.65rem] border bg-slate-950/42 p-5 transition duration-300 hover:-translate-y-1 hover:bg-slate-950/78',
         active ? 'border-emerald-300/70 shadow-[0_0_34px_rgba(52,211,153,0.12)]' : 'border-slate-800/80 hover:border-slate-600',
@@ -724,7 +721,7 @@ function KnowledgeCard({
       </div>
       <p className="text-sm leading-6 text-slate-300">{point.summary}</p>
       <p className="mt-4 line-clamp-3 text-xs leading-5 text-slate-500">{point.detail}</p>
-    </article>
+    </NetVerseMagicBento>
   )
 }
 
@@ -779,10 +776,10 @@ function KnowledgeEditorModal({
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950/45 p-4 backdrop-blur-sm">
+    <NetVerseMagicBento className="rounded-2xl border border-slate-800 bg-slate-950/45 p-4 backdrop-blur-sm" accent="#34d399">
       <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{label}</div>
       <div className="font-mono-data mt-2 break-words text-sm text-cyan-50">{value}</div>
-    </div>
+    </NetVerseMagicBento>
   )
 }
 
@@ -820,10 +817,10 @@ function EditorField({
 function createGraph(points: KnowledgePoint[]) {
   const nodes: GraphNode[] = []
   const links: Array<{ source: string; target: string }> = []
-  nodes.push({ id: 'root', label: '计算机网络', type: 'root', accent: '#f8fafc', position: [0, 2.35, 0] })
+  nodes.push({ id: 'root', label: '计算机网络', type: 'root', accent: '#f8fafc', position: [0, 4.4, 0] })
 
   layerProfiles.forEach((profile, layerIndex) => {
-    const layerY = 1.25 - layerIndex * 0.95
+    const layerY = 2.35 - layerIndex * 1.82
     const layerX = 0
     const side = layerIndex % 2 === 0 ? -1 : 1
     const layerNode: GraphNode = {
@@ -840,6 +837,7 @@ function createGraph(points: KnowledgePoint[]) {
     const concepts = [...profile.protocols.slice(0, 4), ...profile.devices.slice(0, 2), profile.dataUnit]
     concepts.forEach((name, index) => {
       const angle = (index / concepts.length) * Math.PI * 2
+      const ringRadius = 3.85 + (index % 2) * 1.05
       const node: GraphNode = {
         id: `${profile.layer}-${name}`,
         label: name,
@@ -847,9 +845,9 @@ function createGraph(points: KnowledgePoint[]) {
         layer: profile.layer,
         accent: profile.accent,
         position: [
-          layerX + side * (1.35 + (index % 3) * 0.72),
-          layerY + (index - 3) * 0.08,
-          Math.sin(angle) * 1.05,
+          layerX + side * (5.7 + Math.abs(Math.cos(angle)) * ringRadius),
+          layerY + Math.sin(angle) * 1.02,
+          Math.sin(angle * 1.25) * 3.55,
         ],
       }
       nodes.push(node)
@@ -857,6 +855,8 @@ function createGraph(points: KnowledgePoint[]) {
     })
 
     points.filter((pointItem) => pointItem.layer === profile.layer).slice(0, 5).forEach((pointItem, index) => {
+      const angle = -Math.PI / 2 + (index / 5) * Math.PI * 1.15
+      const ringRadius = 4.25 + (index % 2) * 1.05
       const node: GraphNode = {
         id: pointItem.id,
         label: pointItem.title,
@@ -865,9 +865,9 @@ function createGraph(points: KnowledgePoint[]) {
         accent: profile.accent,
         point: pointItem,
         position: [
-          layerX - side * (1.45 + (index % 3) * 0.6),
-          layerY - 0.28 - index * 0.08,
-          -1.35 - (index % 2) * 0.55,
+          layerX - side * (6.15 + Math.abs(Math.cos(angle)) * ringRadius),
+          layerY - 0.86 + Math.sin(angle) * 1.02,
+          -3.75 - Math.cos(angle * 1.1) * 2.25,
         ],
       }
       nodes.push(node)

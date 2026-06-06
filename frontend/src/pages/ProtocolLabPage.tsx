@@ -1,10 +1,20 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link2, Unlink } from 'lucide-react'
+﻿import { useEffect, useMemo, useState } from 'react'
+import { Link2, RotateCcw, SkipBack, SkipForward, Unlink } from 'lucide-react'
 import { AppShell } from '../components/AppShell'
 import { NetworkScene } from '../components/NetworkScene'
 import { PlaybackControls } from '../components/PlaybackControls'
 import { SimulationInspector } from '../components/SimulationInspector'
 import { Timeline } from '../components/Timeline'
+import { ModuleSignalHeading } from '../components/VisualEffects'
+import {
+  clearHostDnsCacheApi,
+  clearResolverDnsCacheApi,
+  commitDnsResolution as commitDnsResolutionApi,
+  fetchDnsCache,
+  fetchHostDnsCache,
+  fetchTcpSteps,
+  resolveDns,
+} from '../api/netverseApi'
 import {
   createDnsIdleStep,
   createDnsSteps,
@@ -16,54 +26,68 @@ import {
 } from '../data/dnsSimulation'
 import { createTcpHandshakeSteps, createTcpReleaseSteps, tcpTopology } from '../data/tcpSimulation'
 import { cn } from '../lib/classNames'
+import type { SimulationStep } from '../types/simulation'
 import type { TopologyNode } from '../types/simulation'
 
 type LabMode = 'dns' | 'tcp'
 type TcpMode = 'handshake' | 'release'
 type DnsRunStatus = 'idle' | 'running' | 'cache-hit' | 'completed' | 'reset'
+type DnsCacheLayer = 'host' | 'resolver' | 'miss'
 
 export function ProtocolLabPage() {
   const [labMode, setLabMode] = useState<LabMode>('dns')
-  const [domain, setDomain] = useState('www.abc.com')
+  const [domain, setDomain] = useState('')
   const [dnsCache, setDnsCache] = useState<DnsCacheRecord[]>([])
+  const [hostDnsCache, setHostDnsCache] = useState<DnsCacheRecord[]>([])
   const [activeDnsRecord, setActiveDnsRecord] = useState<DnsCacheRecord | undefined>(undefined)
   const [dnsRun, setDnsRun] = useState(0)
   const [dnsRunStatus, setDnsRunStatus] = useState<DnsRunStatus>('idle')
   const [dnsMaxUnlockedIndex, setDnsMaxUnlockedIndex] = useState(0)
   const [committedDnsRun, setCommittedDnsRun] = useState<number | null>(null)
   const [focusNonce, setFocusNonce] = useState(0)
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
-  const [completionNotice, setCompletionNotice] = useState<{ domain: string; ip: string; mode: 'hit' | 'resolved' } | null>(null)
   const [tcpMode, setTcpMode] = useState<TcpMode>('handshake')
   const [clientSeq, setClientSeq] = useState(1000)
   const [serverSeq, setServerSeq] = useState(5000)
   const [index, setIndex] = useState(0)
-  const [playing, setPlaying] = useState(false)
-  const [speed, setSpeed] = useState(1)
+  const [apiSteps, setApiSteps] = useState<SimulationStep[] | null>(null)
+  const [confirmedCacheHitDomain, setConfirmedCacheHitDomain] = useState<string | null>(null)
+  const [dnsRunLocked, setDnsRunLocked] = useState(false)
+  const [dnsCacheLayer, setDnsCacheLayer] = useState<DnsCacheLayer | null>(null)
+  const [resolvedDnsIp, setResolvedDnsIp] = useState<string | null>(null)
   const normalizedDomain = normalizeDomain(domain)
-  const cachedRecord = dnsCache.find((record) => record.domain === normalizedDomain)
+  const currentRunCacheHit = Boolean(dnsRunLocked && domain.trim() && confirmedCacheHitDomain === normalizedDomain)
   const runCachedRecord = activeDnsRecord?.domain === normalizedDomain ? activeDnsRecord : undefined
 
   const steps = useMemo(() => {
+    if (apiSteps) return apiSteps
     if (labMode === 'dns' && dnsRunStatus === 'idle') return [createDnsIdleStep(domain, dnsCache)]
     if (labMode === 'dns') return createDnsSteps(domain, { cachedRecord: runCachedRecord, cacheRows: dnsCache })
     return tcpMode === 'handshake'
       ? createTcpHandshakeSteps(clientSeq, serverSeq)
       : createTcpReleaseSteps(clientSeq, serverSeq)
-  }, [clientSeq, dnsCache, dnsRunStatus, domain, labMode, runCachedRecord, serverSeq, tcpMode])
+  }, [apiSteps, clientSeq, dnsCache, dnsRunStatus, domain, labMode, runCachedRecord, serverSeq, tcpMode])
 
   const topology: TopologyNode[] = labMode === 'dns' ? createDnsTopology(domain) : tcpTopology
   const currentStep = steps[Math.min(index, steps.length - 1)]
-  const selectedNode = selectedNodeId ? topology.find((node) => node.id === selectedNodeId) : undefined
 
   useEffect(() => {
     setIndex(0)
-    setPlaying(false)
-  }, [dnsRun, labMode, tcpMode])
+  }, [apiSteps, dnsRun, labMode, tcpMode])
+
+  useEffect(() => {
+    refreshDnsCaches()
+  }, [])
+
+  useEffect(() => {
+    if (labMode !== 'tcp') return
+    fetchTcpSteps(tcpMode, clientSeq, serverSeq)
+      .then(setApiSteps)
+      .catch(() => setApiSteps(null))
+  }, [clientSeq, labMode, serverSeq, tcpMode])
 
   useEffect(() => {
     if (labMode !== 'dns') return
-    if (currentStep.id !== 'dns-09') return
+    if (currentStep.id !== 'dns-10') return
     if (committedDnsRun === dnsRun) return
     commitDnsResolution()
   }, [committedDnsRun, currentStep.id, dnsRun, labMode, normalizedDomain])
@@ -71,27 +95,7 @@ export function ProtocolLabPage() {
   useEffect(() => {
     if (labMode !== 'dns') return
     if (currentStep.id !== 'dns-10') return
-    setCompletionNotice({ domain: normalizedDomain, ip: resolveDnsIp(normalizedDomain), mode: 'resolved' })
   }, [currentStep.id, labMode, normalizedDomain])
-
-  useEffect(() => {
-    if (!playing) return
-    const timeout = window.setTimeout(() => {
-      setIndex((value) => {
-        if (value >= steps.length - 1) {
-          setPlaying(false)
-          if (labMode === 'dns' && runCachedRecord) setDnsRunStatus('cache-hit')
-          return value
-        }
-        const nextIndex = value + 1
-        if (labMode === 'dns') setDnsMaxUnlockedIndex((max) => Math.max(max, nextIndex))
-        if (labMode === 'dns') setFocusNonce((nonce) => nonce + 1)
-        return nextIndex
-      })
-    }, 1500 / speed)
-
-    return () => window.clearTimeout(timeout)
-  }, [index, labMode, playing, runCachedRecord, speed, steps.length])
 
   function next() {
     if (labMode === 'dns' && dnsRunStatus === 'idle') {
@@ -113,28 +117,48 @@ export function ProtocolLabPage() {
 
   function reset() {
     setIndex(0)
-    setPlaying(false)
     if (labMode === 'dns') {
       setActiveDnsRecord(undefined)
       setDnsRunStatus('reset')
       setDnsMaxUnlockedIndex(0)
-      setCompletionNotice(null)
+      setConfirmedCacheHitDomain(null)
+      setDnsCacheLayer(null)
+      setResolvedDnsIp(null)
+      setCommittedDnsRun(null)
+      setDnsRunLocked(false)
       setDnsRun((value) => value + 1)
       setFocusNonce((nonce) => nonce + 1)
     }
   }
 
-  function runDnsQuery() {
+  async function runDnsQuery() {
     setLabMode('dns')
-    const record = dnsCache.find((row) => row.domain === normalizeDomain(domain))
-    setActiveDnsRecord(record)
-    setDnsRunStatus(record ? 'cache-hit' : 'running')
-    setDnsMaxUnlockedIndex(record ? 0 : 1)
-    setDnsRun((value) => value + 1)
-    setIndex(0)
-    setPlaying(false)
-    setCompletionNotice(record ? { domain: normalizeDomain(domain), ip: record.ip, mode: 'hit' } : null)
-    setFocusNonce((nonce) => nonce + 1)
+    if (dnsRunLocked) return
+    const queryDomain = domain.trim() || 'www.abc.com'
+    if (!domain.trim()) setDomain(queryDomain)
+    setDnsRunLocked(true)
+    try {
+      const response = await resolveDns(queryDomain)
+      setApiSteps(response.steps)
+      setDnsRunStatus(response.cacheHit ? 'cache-hit' : 'running')
+      setDnsMaxUnlockedIndex(Math.max(0, response.steps.length - 1))
+      setConfirmedCacheHitDomain(response.cacheHit ? response.domain : null)
+      setDnsCacheLayer(response.cacheLayer)
+      setResolvedDnsIp(response.ip)
+    } catch {
+      const record = dnsCache.find((row) => row.domain === normalizeDomain(queryDomain))
+      setApiSteps(null)
+      setActiveDnsRecord(record)
+      setDnsRunStatus(record ? 'cache-hit' : 'running')
+      setDnsMaxUnlockedIndex(record ? 0 : 1)
+      setConfirmedCacheHitDomain(record ? record.domain : null)
+      setDnsCacheLayer(record ? 'resolver' : 'miss')
+      setResolvedDnsIp(record?.ip ?? resolveDnsIp(normalizeDomain(queryDomain)))
+    } finally {
+      setDnsRun((value) => value + 1)
+      setIndex(0)
+      setFocusNonce((nonce) => nonce + 1)
+    }
   }
 
   function beginDnsRun() {
@@ -142,47 +166,30 @@ export function ProtocolLabPage() {
     runDnsQuery()
   }
 
-  function handlePlayToggle() {
-    if (labMode === 'dns' && dnsRunStatus === 'idle') {
-      const record = dnsCache.find((row) => row.domain === normalizeDomain(domain))
-      setActiveDnsRecord(record)
-      setDnsRunStatus(record ? 'cache-hit' : 'running')
-      setDnsMaxUnlockedIndex(record ? 0 : 1)
-      setDnsRun((value) => value + 1)
-      setIndex(0)
-      setPlaying(!record)
-      setCompletionNotice(record ? { domain: normalizeDomain(domain), ip: record.ip, mode: 'hit' } : null)
-      setFocusNonce((nonce) => nonce + 1)
-      return
-    }
-    setPlaying((value) => !value)
-  }
-
   function selectTimelineStep(nextIndex: number) {
     if (labMode === 'dns' && nextIndex > dnsMaxUnlockedIndex) return
     setIndex(nextIndex)
   }
 
-  function commitDnsResolution() {
-    const ip = resolveDnsIp(normalizedDomain)
-    setDnsCache((rows) => upsertCacheRow(rows, {
+  async function commitDnsResolution() {
+    if (dnsCacheLayer === 'host') {
+      setCommittedDnsRun(dnsRun)
+      setDnsRunStatus('completed')
+      return
+    }
+    const ip = resolvedDnsIp ?? resolveDnsIp(normalizedDomain)
+    const nextRecord = {
       domain: normalizedDomain,
       ip,
       ttl: '300s',
       source: 'resolver',
-    }))
+    }
+    await commitDnsResolutionApi(normalizedDomain)
+    setDnsCache((rows) => upsertCacheRow(rows, nextRecord))
+    setHostDnsCache((rows) => upsertCacheRow(rows, { ...nextRecord, source: 'browser' }))
     setCommittedDnsRun(dnsRun)
     setDnsRunStatus('completed')
-    setCompletionNotice({ domain: normalizedDomain, ip, mode: 'resolved' })
-  }
-
-  function clearDnsCache() {
-    setDnsCache([])
-    setActiveDnsRecord(undefined)
-    setDnsRunStatus('idle')
-    setDnsMaxUnlockedIndex(0)
-    setCompletionNotice(null)
-    setDnsRun((value) => value + 1)
+    refreshDnsCaches()
   }
 
   function deleteDnsCacheRecord(domainToDelete: string) {
@@ -191,15 +198,52 @@ export function ProtocolLabPage() {
     if (normalizeDomain(domain) === domainToDelete) {
       setDnsRunStatus('idle')
       setDnsMaxUnlockedIndex(0)
-      setCompletionNotice(null)
+      setConfirmedCacheHitDomain(null)
       setDnsRun((value) => value + 1)
     }
   }
 
+  async function clearHostDnsCache() {
+    await clearHostDnsCacheApi()
+    setHostDnsCache([])
+    resetDnsRunState()
+    refreshDnsCaches()
+  }
+
+  async function clearResolverDnsCache() {
+    await clearResolverDnsCacheApi()
+    setDnsCache([])
+    resetDnsRunState()
+    refreshDnsCaches()
+  }
+
+  function resetDnsRunState() {
+    setActiveDnsRecord(undefined)
+    setConfirmedCacheHitDomain(null)
+    setDnsCacheLayer(null)
+    setResolvedDnsIp(null)
+    setCommittedDnsRun(null)
+    setDnsRunStatus('idle')
+    setDnsMaxUnlockedIndex(0)
+    setDnsRunLocked(false)
+    setApiSteps(null)
+    setIndex(0)
+    setDnsRun((value) => value + 1)
+  }
+
+  function refreshDnsCaches() {
+    fetchDnsCache()
+      .then((rows) => setDnsCache(rows.map((row) => ({ domain: row.domain, ip: row.ip, ttl: row.ttl, source: row.source }))))
+      .catch(() => {})
+    fetchHostDnsCache()
+      .then((rows) => setHostDnsCache(rows.map((row) => ({ domain: row.domain, ip: row.ip, ttl: row.ttl, source: row.source }))))
+      .catch(() => {})
+  }
+
   const terminalDnsRun = labMode === 'dns' && (
-    dnsRunStatus === 'cache-hit'
-    || (dnsRunStatus === 'completed' && currentStep.id === 'dns-10')
+    dnsRunLocked && index >= steps.length - 1
   )
+  const dnsControlsLocked = labMode === 'dns' && dnsRunLocked
 
   return (
     <AppShell title="Protocol Lab">
@@ -210,7 +254,6 @@ export function ProtocolLabPage() {
               nodes={topology}
               step={currentStep}
               focusNonce={focusNonce}
-              onNodeSelect={(node) => setSelectedNodeId(node.id)}
             />
           </div>
           <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_42%_56%,transparent_0%,rgba(5,7,13,0.08)_48%,rgba(5,7,13,0.74)_100%)]" />
@@ -219,17 +262,13 @@ export function ProtocolLabPage() {
 
           <div className="pointer-events-none relative z-10 flex min-h-[calc(100vh-4rem)] w-full flex-col px-6 py-8 xl:px-12">
             <header className="pointer-events-auto flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <div className="font-mono-data mb-4 text-xs uppercase tracking-[0.42em] text-cyan-200">
-                  Interactive protocol chamber
-                </div>
-                <h1 className="font-display text-5xl font-extrabold leading-none text-white drop-shadow-[0_0_30px_rgba(34,211,238,0.16)] sm:text-7xl">
-                  {labMode === 'dns' ? 'DNS 解析飞行路径' : 'TCP 状态转移走廊'}
-                </h1>
-                <p className="mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
-                  输入域名或序列号后，像控制一段网络电影一样播放每一次请求、响应、缓存写入和状态迁移。
-                </p>
-              </div>
+              <ModuleSignalHeading
+                eyebrow="Interactive protocol chamber"
+                title={labMode === 'dns' ? 'DNS resolution flight path' : 'TCP state transition corridor'}
+                description="Enter a domain or sequence numbers, then play each request, response, cache write, and state transition like a controllable network film."
+                accent={labMode === 'dns' ? 'cyan' : 'violet'}
+                glitch={labMode === 'tcp'}
+              />
               <div className="flex w-fit rounded-2xl border border-slate-700/50 bg-slate-950/55 p-1 backdrop-blur-md">
                 <ModeButton active={labMode === 'dns'} onClick={() => setLabMode('dns')}>
                   DNS
@@ -248,49 +287,54 @@ export function ProtocolLabPage() {
                 onSelect={selectTimelineStep}
               />
             </div>
-            <div className="pointer-events-auto mt-3 flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-              <div className="w-full xl:max-w-[790px]">
-                <section className="rounded-2xl border border-slate-700/55 bg-slate-950/54 p-3 shadow-[0_0_34px_rgba(34,211,238,0.08)] backdrop-blur-md">
+            <section className="pointer-events-auto mt-3 flex flex-col gap-4 rounded-[1.65rem] border border-slate-700/45 bg-slate-950/54 p-3 shadow-[0_0_34px_rgba(34,211,238,0.08)] backdrop-blur-md xl:flex-row xl:items-end xl:justify-between">
+              <div className="w-full xl:max-w-[780px]">
                 <ExperimentInputs
                   labMode={labMode}
                   domain={domain}
-                  cacheMatched={Boolean(cachedRecord)}
+                  cacheMatched={currentRunCacheHit}
+                  dnsRunLocked={dnsControlsLocked}
                   tcpMode={tcpMode}
                   clientSeq={clientSeq}
                   serverSeq={serverSeq}
-                  onDomainChange={setDomain}
+                  onDomainChange={(value) => {
+                    if (dnsRunLocked) return
+                    setDomain(value)
+                    setApiSteps(null)
+                    setActiveDnsRecord(undefined)
+                    setDnsRunStatus('idle')
+                    setDnsMaxUnlockedIndex(0)
+                    setIndex(0)
+                    setDnsRun((run) => run + 1)
+                  }}
                   onRunDnsQuery={runDnsQuery}
-                  onClearDnsCache={clearDnsCache}
+                  current={index}
+                  onNext={next}
+                  onPrev={prev}
+                  onReset={reset}
+                  nextDisabled={terminalDnsRun}
                   onTcpModeChange={setTcpMode}
                   onClientSeqChange={setClientSeq}
                   onServerSeqChange={setServerSeq}
                 />
-                </section>
               </div>
-              <div className="flex shrink-0 justify-start xl:justify-end">
+              {labMode === 'tcp' && (
+                <>
+                  <div className="h-px bg-slate-700/45 xl:h-14 xl:w-px" />
+                  <div className="flex shrink-0 justify-start xl:justify-end">
                 <PlaybackControls
                   current={index}
-                  total={steps.length}
-                  playing={playing}
-                  speed={speed}
-                  onPlayToggle={handlePlayToggle}
                   onNext={next}
                   onPrev={prev}
                   onReset={reset}
-                  onSpeedChange={setSpeed}
-                  playDisabled={terminalDnsRun}
-                  nextDisabled={terminalDnsRun}
                 />
-              </div>
-            </div>
+                  </div>
+                </>
+              )}
+            </section>
 
             <div className="mt-10 grid flex-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-              <div className="relative min-h-[500px]">
-                <div className="pointer-events-none absolute left-0 top-0 rounded-2xl border border-slate-700/60 bg-slate-950/65 px-4 py-3 backdrop-blur-md">
-                  <div className="font-mono-data text-xs uppercase tracking-[0.3em] text-slate-500">Now flying</div>
-                  <div className="font-display mt-1 text-lg font-bold text-white">{currentStep.packetType}</div>
-                </div>
-              </div>
+              <div className="relative min-h-[500px]" />
 
               <div className="pointer-events-auto justify-self-end xl:w-[420px]">
                 <SimulationInspector step={currentStep} />
@@ -299,33 +343,26 @@ export function ProtocolLabPage() {
           </div>
         </section>
 
-        <section className="relative z-10 mx-auto grid max-w-[1500px] gap-5 px-4 py-10 xl:grid-cols-[minmax(0,1fr)_390px]">
-          <div className="flex flex-col gap-5">
-            {completionNotice && (
-              <section className="rounded-3xl border border-emerald-300/30 bg-emerald-300/10 p-5 shadow-[0_0_40px_rgba(52,211,153,0.12)]">
-                <div className="font-display text-2xl font-bold text-white">
-                  {completionNotice.mode === 'hit' ? '缓存命中' : '解析完成'}：{completionNotice.domain} {'->'} {completionNotice.ip}
-                </div>
-                <p className="mt-2 text-sm text-emerald-100/80">
-                  {completionNotice.mode === 'hit'
-                    ? '本地已有记录，本次不会继续发起递归查询。'
-                    : '最终 IP 已返回主机，并写入本地缓存。'}
-                </p>
-              </section>
-            )}
-
-            {labMode === 'dns' && selectedNode && (
-              <NodeStatePanel
-                node={selectedNode}
-                cacheRows={dnsCache}
-                currentDomain={normalizedDomain}
-                onDeleteRecord={deleteDnsCacheRecord}
-                onClose={() => setSelectedNodeId(null)}
-              />
+        <section className="relative z-10 mx-auto max-w-[1500px] px-4 py-10">
+          <div className="grid gap-5 xl:grid-cols-2">
+            {labMode === 'dns' && (
+              <>
+                <DnsCacheTablePanel
+                  kind="host"
+                  cacheRows={hostDnsCache}
+                  onClear={clearHostDnsCache}
+                />
+                <DnsCacheTablePanel
+                  kind="resolver"
+                  cacheRows={dnsCache}
+                  onClear={clearResolverDnsCache}
+                  onDeleteRecord={deleteDnsCacheRecord}
+                />
+              </>
             )}
           </div>
 
-          <div className="xl:hidden">
+          <div className="mt-5 xl:hidden">
             <SimulationInspector step={currentStep} />
           </div>
         </section>
@@ -353,12 +390,17 @@ function ExperimentInputs({
   labMode,
   domain,
   cacheMatched,
+  dnsRunLocked,
   tcpMode,
   clientSeq,
   serverSeq,
   onDomainChange,
   onRunDnsQuery,
-  onClearDnsCache,
+  current,
+  onNext,
+  onPrev,
+  onReset,
+  nextDisabled,
   onTcpModeChange,
   onClientSeqChange,
   onServerSeqChange,
@@ -366,45 +408,74 @@ function ExperimentInputs({
   labMode: LabMode
   domain: string
   cacheMatched: boolean
+  dnsRunLocked: boolean
   tcpMode: TcpMode
   clientSeq: number
   serverSeq: number
   onDomainChange: (value: string) => void
   onRunDnsQuery: () => void
-  onClearDnsCache: () => void
+  current: number
+  onNext: () => void
+  onPrev: () => void
+  onReset: () => void
+  nextDisabled: boolean
   onTcpModeChange: (value: TcpMode) => void
   onClientSeqChange: (value: number) => void
   onServerSeqChange: (value: number) => void
 }) {
   if (labMode === 'dns') {
     return (
-      <div className="grid gap-3 lg:grid-cols-[minmax(260px,1fr)_auto_auto]">
+      <div className="grid gap-3 lg:grid-cols-[minmax(260px,1fr)_auto_auto_auto_auto]">
         <label className="block">
           <span className="mb-1.5 block text-xs font-semibold text-slate-300">输入域名</span>
           <input
             value={domain}
+            placeholder="www.abc.com"
+            disabled={dnsRunLocked}
             onChange={(event) => onDomainChange(event.target.value)}
-            className="h-11 w-full rounded-xl border border-slate-700/60 bg-slate-950/60 px-4 font-mono-data text-sm tracking-normal text-cyan-50 outline-none transition focus:border-cyan-300/80"
+            className="h-11 w-full rounded-xl border border-slate-700/60 bg-slate-950/60 px-4 font-mono-data text-sm tracking-normal text-cyan-50 outline-none transition focus:border-cyan-300/80 disabled:cursor-not-allowed disabled:text-slate-500"
           />
         </label>
         <button
           type="button"
           onClick={onRunDnsQuery}
+          disabled={dnsRunLocked}
           className={cn(
-            'h-11 self-end rounded-xl px-5 text-sm font-bold transition',
+            'h-11 self-end rounded-xl border px-5 text-sm font-bold shadow-[0_0_24px_rgba(34,211,238,0.18)] transition',
             cacheMatched
-              ? 'border border-emerald-300/45 bg-emerald-300 text-slate-950 shadow-[0_0_24px_rgba(52,211,153,0.18)]'
-              : 'border border-cyan-300/45 bg-cyan-300 text-slate-950 shadow-[0_0_24px_rgba(34,211,238,0.18)]',
+              ? 'cursor-not-allowed border-emerald-300/45 bg-emerald-300 text-slate-950 shadow-[0_0_24px_rgba(52,211,153,0.18)]'
+              : dnsRunLocked
+                ? 'cursor-not-allowed border-slate-700/55 bg-slate-800 text-slate-400 shadow-none'
+                : 'border-cyan-300/45 bg-cyan-300 text-slate-950 hover:bg-cyan-200',
           )}
         >
-          {cacheMatched ? '查看缓存结果' : '开始解析'}
+          {cacheMatched ? '缓存命中' : dnsRunLocked ? '解析中' : '开始解析'}
         </button>
         <button
           type="button"
-          onClick={onClearDnsCache}
-          className="h-11 self-end rounded-xl border border-slate-700/60 bg-slate-950/60 px-4 text-sm font-bold text-slate-300 transition hover:border-rose-300/50 hover:text-rose-100"
+          onClick={onPrev}
+          disabled={current <= 0}
+          className="inline-flex h-11 w-12 items-center justify-center self-end rounded-xl border border-slate-700/55 bg-slate-950/50 text-slate-100 transition hover:border-cyan-300/60 disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="上一步"
         >
-          清空缓存
+          <SkipBack className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={nextDisabled}
+          className="inline-flex h-11 w-12 items-center justify-center self-end rounded-xl border border-slate-700/55 bg-slate-950/50 text-slate-100 transition hover:border-cyan-300/60 disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="下一步"
+        >
+          <SkipForward className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          onClick={onReset}
+          className="inline-flex h-11 w-12 items-center justify-center self-end rounded-xl border border-slate-700/55 bg-slate-950/50 text-slate-100 transition hover:border-rose-300/60"
+          aria-label="閲嶇疆"
+        >
+          <RotateCcw className="h-5 w-5" />
         </button>
       </div>
     )
@@ -413,7 +484,7 @@ function ExperimentInputs({
   return (
     <div className="grid gap-3 lg:grid-cols-[1.45fr_1fr_1fr]">
       <div>
-        <span className="mb-1.5 block text-xs font-semibold text-slate-300">连接动作</span>
+        <span className="mb-1.5 block text-xs font-semibold text-slate-300">Connection action</span>
         <div className="grid grid-cols-2 gap-1.5 rounded-xl border border-slate-700/60 bg-slate-950/60 p-1">
           <button
             type="button"
@@ -424,7 +495,7 @@ function ExperimentInputs({
             )}
           >
             <Link2 className="h-4 w-4" />
-            三次握手
+            3-way handshake
           </button>
           <button
             type="button"
@@ -435,12 +506,12 @@ function ExperimentInputs({
             )}
           >
             <Unlink className="h-4 w-4" />
-            四次挥手
+            4-way release
           </button>
         </div>
       </div>
       <label className="block">
-        <span className="mb-1.5 block text-xs font-semibold text-slate-300">客户端 Seq</span>
+        <span className="mb-1.5 block text-xs font-semibold text-slate-300">Client Seq</span>
         <input
           type="number"
           value={clientSeq}
@@ -449,7 +520,7 @@ function ExperimentInputs({
         />
       </label>
       <label className="block">
-        <span className="mb-1.5 block text-xs font-semibold text-slate-300">服务器 Seq</span>
+        <span className="mb-1.5 block text-xs font-semibold text-slate-300">Server Seq</span>
         <input
           type="number"
           value={serverSeq}
@@ -461,102 +532,92 @@ function ExperimentInputs({
   )
 }
 
-function NodeStatePanel({
-  node,
+function DnsCacheTablePanel({
+  kind,
   cacheRows,
-  currentDomain,
+  onClear,
   onDeleteRecord,
-  onClose,
 }: {
-  node: TopologyNode
+  kind: 'host' | 'resolver'
   cacheRows: DnsCacheRecord[]
-  currentDomain: string
-  onDeleteRecord: (domain: string) => void
-  onClose: () => void
+  onClear: () => void
+  onDeleteRecord?: (domain: string) => void
 }) {
-  const domainParts = currentDomain.split('.').filter(Boolean)
-  const tld = domainParts.length > 0 ? `.${domainParts[domainParts.length - 1]}` : '.com'
-  const registeredDomain = domainParts.length >= 2
-    ? `${domainParts[domainParts.length - 2]}.${domainParts[domainParts.length - 1]}`
-    : currentDomain
+  const showsResolverCache = kind === 'resolver'
+  const title = showsResolverCache ? '本地 DNS 服务器缓存表' : '主机侧缓存表'
+  const eyebrow = showsResolverCache ? 'LOCAL DNS RESOLVER' : 'HOST SIDE CACHE'
+  const description = showsResolverCache
+    ? '来自后端 dns_cache，表示本地 DNS 服务器递归解析后的缓存。'
+    : '来自后端 host_dns_cache，表示浏览器缓存、OS DNS 缓存或 Hosts。'
+  const emptyText = showsResolverCache ? '本地 DNS 服务器缓存暂无记录。' : '主机侧缓存暂无记录。'
 
   return (
-    <section className="glass-panel rounded-3xl p-5">
-      <div className="mb-4 flex items-start justify-between gap-4">
+    <section className="border border-slate-800/80 bg-slate-950/72 p-5 shadow-[0_20px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl">
+      <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <div className="font-mono-data mb-2 text-xs uppercase tracking-[0.32em] text-cyan-200">
-            selected node
+          <div className="font-mono-data mb-2 text-xs uppercase tracking-[0.28em] text-cyan-200">
+            {eyebrow}
           </div>
-          <h2 className="font-display text-2xl font-bold text-white">{node.label}</h2>
-          <p className="mt-1 text-sm text-slate-400">{node.role}</p>
+          <h2 className="font-display text-2xl font-bold text-white">{title}</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-400">{description}</p>
         </div>
         <button
           type="button"
-          onClick={onClose}
+          onClick={onClear}
           className="rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-1.5 text-xs font-bold text-slate-300 transition hover:border-cyan-300/50 hover:text-white"
         >
-          Close
+          Clear
         </button>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
-        <NodeMetric label="Node type" value={node.kind ?? 'unknown'} />
-        <NodeMetric label="Current domain" value={currentDomain} />
-        {node.kind === 'dns-root' && <NodeMetric label="Delegation record" value={`${tld} -> ${tld} TLD DNS`} />}
-        {node.kind === 'dns-tld' && <NodeMetric label="Delegation record" value={`${registeredDomain} -> ${registeredDomain} DNS`} />}
-        {node.kind === 'dns-authority' && <NodeMetric label="Zone record" value={`${currentDomain} A ${resolveDnsIp(currentDomain)}`} />}
-        {node.kind === 'network' && <NodeMetric label="Data path" value="client -> routers/ISP -> web server" />}
+      <div className="max-h-[520px] overflow-y-auto overflow-x-hidden border-y border-slate-800">
+        {cacheRows.length === 0 ? (
+          <div className="px-4 py-5 text-center text-sm text-slate-500">
+            {emptyText}
+          </div>
+        ) : (
+          cacheRows.map((row) => (
+            <div
+              key={`${kind}-${row.domain}`}
+              className="border-t border-slate-800/80 px-4 py-4 first:border-t-0"
+            >
+              <div className="flex min-w-0 items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-xs uppercase tracking-[0.16em] text-slate-500">Domain</div>
+                  <div className="font-mono-data mt-1 min-w-0 [overflow-wrap:anywhere] text-sm leading-5 text-cyan-50">
+                    {row.domain}
+                  </div>
+                </div>
+                {showsResolverCache && (
+                  <button
+                    type="button"
+                    onClick={() => onDeleteRecord?.(row.domain)}
+                    className="shrink-0 rounded-xl border border-rose-300/30 bg-rose-300/10 px-3 py-1 text-xs font-bold text-rose-100 transition hover:bg-rose-300/20"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                <CacheCell label="IP" value={row.ip} className="text-emerald-100" />
+                <CacheCell label="TTL" value={row.ttl} className="text-slate-300" />
+                <CacheCell label="Source" value={row.source} className="text-slate-300" />
+              </div>
+            </div>
+          ))
+        )}
       </div>
-
-      {(node.kind === 'client' || node.kind === 'cache' || node.kind === 'resolver') && (
-        <div className="mt-4 overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/45">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-900/80 text-xs uppercase tracking-[0.16em] text-slate-400">
-              <tr>
-                <th className="px-4 py-3 font-medium">Domain</th>
-                <th className="px-4 py-3 font-medium">IP</th>
-                <th className="px-4 py-3 font-medium">TTL</th>
-                <th className="px-4 py-3 text-right font-medium">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cacheRows.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-4 py-5 text-center text-slate-500">
-                    No cached DNS records on this node yet.
-                  </td>
-                </tr>
-              ) : (
-                cacheRows.map((row) => (
-                  <tr key={`${node.id}-${row.domain}`} className="border-t border-slate-800/80">
-                    <td className="font-mono-data px-4 py-3 text-cyan-50">{row.domain}</td>
-                    <td className="font-mono-data px-4 py-3 text-emerald-100">{row.ip}</td>
-                    <td className="font-mono-data px-4 py-3 text-slate-300">{row.ttl}</td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => onDeleteRecord(row.domain)}
-                        className="rounded-xl border border-rose-300/30 bg-rose-300/10 px-3 py-1 text-xs font-bold text-rose-100 transition hover:bg-rose-300/20"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
     </section>
   )
 }
 
-function NodeMetric({ label, value }: { label: string; value: string }) {
+function CacheCell({ label, value, className }: { label: string; value: string; className?: string }) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950/45 p-4">
-      <div className="text-xs uppercase tracking-[0.18em] text-slate-500">{label}</div>
-      <div className="font-mono-data mt-2 break-words text-sm text-cyan-50">{value}</div>
+    <div className="min-w-0">
+      <span className="mb-1 block text-xs uppercase tracking-[0.16em] text-slate-500">{label}</span>
+      <span className={cn('font-mono-data block min-w-0 [overflow-wrap:anywhere] text-sm tracking-normal', className)}>
+        {value}
+      </span>
     </div>
   )
 }

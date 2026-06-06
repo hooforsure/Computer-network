@@ -1,6 +1,6 @@
-import { Line, OrbitControls, Text } from '@react-three/drei'
+import { Billboard, Html, Line, OrbitControls, Text } from '@react-three/drei'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { Suspense, useMemo, useRef } from 'react'
+import { Suspense, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import type { SimulationStep, TopologyNode } from '../types/simulation'
 
@@ -53,7 +53,7 @@ function TopologyFallback({ nodes, step }: { nodes: TopologyNode[]; step: Simula
   const byId = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes])
   const links = useMemo(() => collectLinks(step), [step])
   const localScanNodes = step.visualMode === 'local-scan'
-    ? (['client', 'cache', 'localDns'].map((id) => byId.get(id)).filter(Boolean) as TopologyNode[])
+    ? (step.path.map((id) => byId.get(id)).filter(Boolean) as TopologyNode[])
     : []
 
   return (
@@ -104,22 +104,23 @@ function Topology({
 }) {
   const byId = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes])
   const links = useMemo(() => collectLinks(step), [step])
-  const packetPath = step.path.map((id) => byId.get(id)?.position).filter(Boolean) as Array<[number, number, number]>
+  const packetPath = useMemo(() => resolvePathPoints(step.path, byId), [byId, step.path])
+  const broadcastPaths = useMemo(() => collectBroadcastPaths(step, byId), [byId, step])
+  const isDnsTopology = nodes.some((node) => node.id === 'localDns' || node.id === 'rootDns')
   const localScanNodes = step.visualMode === 'local-scan'
-    ? (['client', 'cache', 'localDns'].map((id) => byId.get(id)).filter(Boolean) as TopologyNode[])
+    ? (step.path.map((id) => byId.get(id)).filter(Boolean) as TopologyNode[])
     : []
 
   return (
     <group>
       {links.map(([from, to]) => {
-        const start = byId.get(from)
-        const end = byId.get(to)
-        if (!start || !end) return null
+        const points = resolveLinkPoints(from, to, byId)
+        if (!points) return null
         const active = step.highlightLinks?.some(([a, b]) => (a === from && b === to) || (a === to && b === from))
         return (
           <Line
             key={`${from}-${to}`}
-            points={[start.position, end.position]}
+            points={points}
             color={active ? activeLinkColor(step) : '#334155'}
             lineWidth={active ? 3 : 1}
             transparent
@@ -133,6 +134,7 @@ function Topology({
           node={node}
           active={step.highlightNodes?.includes(node.id) ?? false}
           selected={selectedNodeId === node.id}
+          selectable={Boolean(onNodeSelect) && (!isDnsTopology || node.id === 'cache' || node.id === 'localDns')}
           onSelect={onNodeSelect}
         />
       ))}
@@ -140,13 +142,27 @@ function Topology({
         <LocalScan nodes={localScanNodes} hit={step.packetType === 'CACHE_HIT'} />
       )}
       {step.visualMode !== 'local-scan' && packetPath.length >= 2 && (
-        <Packet
-          path={packetPath}
-          color={packetColor(step)}
-          label={packetLabel(step)}
-          direction={step.direction}
-          onSelect={() => onPacketSelect?.(step)}
-        />
+        step.broadcast && broadcastPaths.length > 0 ? (
+          broadcastPaths.map((path, index) => (
+            <Packet
+              key={`broadcast-${step.id}-${index}`}
+              path={path}
+              color={packetColor(step)}
+              label={packetLabel(step)}
+              direction={step.direction}
+              offset={index * 0.12}
+              onSelect={() => onPacketSelect?.(step)}
+            />
+          ))
+        ) : (
+          <Packet
+            path={packetPath}
+            color={packetColor(step)}
+            label={packetLabel(step)}
+            direction={step.direction}
+            onSelect={() => onPacketSelect?.(step)}
+          />
+        )
       )}
     </group>
   )
@@ -156,14 +172,17 @@ function NetworkNode({
   node,
   active,
   selected,
+  selectable,
   onSelect,
 }: {
   node: TopologyNode
   active: boolean
   selected: boolean
+  selectable: boolean
   onSelect?: (node: TopologyNode) => void
 }) {
   const group = useRef<THREE.Group>(null)
+  const [hovered, setHovered] = useState(false)
 
   useFrame(({ clock }) => {
     if (!group.current) return
@@ -176,7 +195,20 @@ function NetworkNode({
       position={node.position}
       onClick={(event) => {
         event.stopPropagation()
-        onSelect?.(node)
+        if (selectable) onSelect?.(node)
+      }}
+      onPointerOver={(event) => {
+        event.stopPropagation()
+        if (selectable) {
+          setHovered(true)
+          document.body.style.cursor = 'pointer'
+        }
+      }}
+      onPointerOut={() => {
+        if (selectable) {
+          setHovered(false)
+          document.body.style.cursor = 'auto'
+        }
       }}
     >
       <group ref={group}>
@@ -184,14 +216,42 @@ function NetworkNode({
       </group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.44, 0]}>
         <ringGeometry args={[0.62, 0.68, 56]} />
-        <meshBasicMaterial color={node.color} transparent opacity={active ? 0.7 : 0.22} />
+        <meshBasicMaterial color={node.color} transparent opacity={hovered ? 0.82 : active ? 0.7 : selectable ? 0.34 : 0.16} />
       </mesh>
-      <Text position={[0, 0.82, 0]} fontSize={0.22} color="#f8fafc" anchorX="center" anchorY="middle">
-        {node.label}
-      </Text>
-      <Text position={[0, 0.54, 0]} fontSize={0.13} color="#94a3b8" anchorX="center" anchorY="middle">
-        {node.role}
-      </Text>
+      {hovered && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.38, 0]}>
+          <ringGeometry args={[0.78, 0.84, 72]} />
+          <meshBasicMaterial color="#67e8f9" transparent opacity={0.78} />
+        </mesh>
+      )}
+      <Billboard position={[0, 1.08, 0]} follow>
+        <Text
+          fontSize={0.22}
+          color="#f8fafc"
+          anchorX="center"
+          anchorY="middle"
+          outlineWidth={0.012}
+          outlineColor="#020617"
+          renderOrder={20}
+          material-depthTest={false}
+        >
+          {node.label}
+        </Text>
+        <Text
+          position={[0, -0.24, 0]}
+          fontSize={0.12}
+          color="#dbeafe"
+          anchorX="center"
+          anchorY="middle"
+          outlineWidth={0.008}
+          outlineColor="#020617"
+          renderOrder={20}
+          material-depthTest={false}
+        >
+          {node.role}
+        </Text>
+      </Billboard>
+      {node.kind === 'switch' && <SwitchPortLabels />}
       {selected && (
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.39, 0]}>
           <ringGeometry args={[0.86, 0.93, 72]} />
@@ -265,17 +325,29 @@ function NodeModel({ node, active }: { node: TopologyNode; active: boolean }) {
   }
 
   if (node.kind === 'switch') {
+    const ports = [
+      -0.36,
+      -0.12,
+      0.12,
+      0.36,
+    ]
     return (
       <group>
         <mesh position={[0, -0.02, 0]}>
-          <boxGeometry args={[0.95, 0.24, 0.58]} />
+          <boxGeometry args={[1.08, 0.24, 0.62]} />
           {material}
         </mesh>
-        {[-0.32, -0.1, 0.12, 0.34].map((x) => (
-          <mesh key={x} position={[x, 0.14, 0.31]}>
-            <boxGeometry args={[0.11, 0.06, 0.035]} />
-            <meshBasicMaterial color="#bbf7d0" transparent opacity={active ? 0.95 : 0.48} />
-          </mesh>
+        {ports.map((x) => (
+          <group key={x}>
+            <mesh position={[x, 0.13, 0.36]}>
+              <boxGeometry args={[0.16, 0.1, 0.08]} />
+              <meshBasicMaterial color="#0f172a" />
+            </mesh>
+            <mesh position={[x, 0.14, 0.415]}>
+              <boxGeometry args={[0.115, 0.055, 0.035]} />
+              <meshBasicMaterial color="#bbf7d0" transparent opacity={active ? 1 : 0.7} />
+            </mesh>
+          </group>
         ))}
       </group>
     )
@@ -341,17 +413,43 @@ function NodeModel({ node, active }: { node: TopologyNode; active: boolean }) {
   )
 }
 
+function SwitchPortLabels() {
+  const ports = [
+    { x: -0.36, label: 'S1', device: 'DNS' },
+    { x: -0.12, label: 'S2', device: 'R' },
+    { x: 0.12, label: 'S3', device: 'H2' },
+    { x: 0.36, label: 'S4', device: 'H1' },
+  ]
+
+  return (
+    <group position={[0, 0.54, 0.52]}>
+      {ports.map((port) => (
+        <group key={port.label} position={[port.x, 0, 0]}>
+          <Html center distanceFactor={8} transform={false}>
+            <div className="pointer-events-none min-w-9 rounded border border-amber-200/60 bg-slate-950/85 px-1.5 py-1 text-center shadow-[0_0_14px_rgba(251,191,36,0.24)]">
+              <div className="font-mono-data text-[10px] font-black leading-none text-amber-100">{port.label}</div>
+              <div className="font-mono-data mt-0.5 text-[8px] leading-none text-cyan-100">{port.device}</div>
+            </div>
+          </Html>
+        </group>
+      ))}
+    </group>
+  )
+}
+
 function Packet({
   path,
   color,
   label,
   direction,
+  offset = 0,
   onSelect,
 }: {
   path: Array<[number, number, number]>
   color: string
   label: string
   direction?: SimulationStep['direction']
+  offset?: number
   onSelect?: () => void
 }) {
   const group = useRef<THREE.Group>(null)
@@ -362,7 +460,7 @@ function Packet({
 
   useFrame(({ clock }) => {
     if (!group.current) return
-    const t = (clock.elapsedTime * 0.28) % 1
+    const t = (clock.elapsedTime * 0.28 + offset) % 1
     const point = curve.getPointAt(t)
     group.current.position.copy(point)
   })
@@ -418,17 +516,18 @@ function LocalScan({ nodes, hit, compact = false }: { nodes: TopologyNode[]; hit
           </group>
         </group>
       ))}
-      {points.length >= 2 && (
-        <Line
-          points={points}
-          color={color}
-          lineWidth={3}
-          transparent
-          opacity={0.88}
-        />
-      )}
       {!compact && (
-        <Text position={[-3.25, 1.28, -0.6]} fontSize={0.18} color={color} anchorX="center" anchorY="middle">
+        <Text
+          position={points[1] ?? points[0]}
+          fontSize={0.18}
+          color={color}
+          anchorX="center"
+          anchorY="middle"
+          outlineWidth={0.01}
+          outlineColor="#020617"
+          renderOrder={20}
+          material-depthTest={false}
+        >
           {hit ? 'CACHE HIT' : 'CACHE MISS'}
         </Text>
       )}
@@ -487,6 +586,62 @@ function collectLinks(step: SimulationStep): Array<[string, string]> {
     add(step.path[index], step.path[index + 1])
   }
   return Array.from(links).map((link) => link.split('|') as [string, string])
+}
+
+function collectBroadcastPaths(
+  step: SimulationStep,
+  byId: Map<string, TopologyNode>,
+): Array<Array<[number, number, number]>> {
+  if (!step.broadcast || step.path.length < 2) return []
+  const source = step.path[0]
+  const hub = step.path[1]
+  const floodedTargets = new Set<string>()
+
+  step.highlightLinks?.forEach(([a, b]) => {
+    if (a === hub && b !== source) floodedTargets.add(b)
+    if (b === hub && a !== source) floodedTargets.add(a)
+  })
+
+  return Array.from(floodedTargets)
+    .map((target) => resolvePathPoints([source, hub, target], byId))
+    .filter((path) => path.length >= 3)
+}
+
+function resolvePathPoints(ids: string[], byId: Map<string, TopologyNode>) {
+  const points: Array<[number, number, number]> = []
+  ids.forEach((id, index) => {
+    const previous = ids[index - 1]
+    const next = ids[index + 1]
+    const point = resolveEndpoint(id, previous ?? next, byId)
+    if (point) points.push(point)
+  })
+  return points
+}
+
+function resolveLinkPoints(from: string, to: string, byId: Map<string, TopologyNode>) {
+  const start = resolveEndpoint(from, to, byId)
+  const end = resolveEndpoint(to, from, byId)
+  if (!start || !end) return null
+  return [start, end] as Array<[number, number, number]>
+}
+
+function resolveEndpoint(id: string, peerId: string | undefined, byId: Map<string, TopologyNode>) {
+  const node = byId.get(id)
+  if (!node) return undefined
+  if (id !== 'switch' || !peerId) return node.position
+  return switchPortPosition(node.position, peerId)
+}
+
+function switchPortPosition(base: [number, number, number], peerId: string): [number, number, number] {
+  const xByPeer: Record<string, number> = {
+    dns: -0.36,
+    router: -0.12,
+    h2: 0.12,
+    h1: 0.36,
+  }
+  const x = xByPeer[peerId]
+  if (x === undefined) return base
+  return [base[0] + x, base[1] + 0.14, base[2] + 0.42]
 }
 
 function packetColor(step: SimulationStep) {

@@ -299,7 +299,7 @@ export function createScenarioSteps(): SimulationStep[] {
       },
       requirement: {
         purpose: '本地 DNS 经过外部递归/迭代查询获得 www.abc.com 的公网 IP，并把答案返回给 H1。',
-        communicationType: '外部递归',
+        communicationType: '单播',
         source: '本地 DNS 服务器',
         target: 'H1',
         sourceMac: dnsMac,

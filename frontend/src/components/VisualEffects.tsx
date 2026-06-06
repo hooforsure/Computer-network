@@ -2,6 +2,8 @@ import { useMemo, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Atom, BookOpen, Network } from 'lucide-react'
 import { cn } from '../lib/classNames'
+import BlurText from './BlurText'
+import GlitchText from './GlitchText'
 
 export function HeroSignalTitle({ text }: { text: string }) {
   const words = text.split(' ')
@@ -142,5 +144,51 @@ export function GooeyNav({ className }: { className?: string }) {
         })}
       </div>
     </nav>
+  )
+}
+
+export function ModuleSignalHeading({
+  eyebrow,
+  title,
+  description,
+  accent = 'cyan',
+  glitch = false,
+}: {
+  eyebrow: string
+  title: string
+  description?: string
+  accent?: 'cyan' | 'violet' | 'amber' | 'emerald'
+  glitch?: boolean
+}) {
+  const accentClass = {
+    cyan: 'text-cyan-200',
+    violet: 'text-violet-200',
+    amber: 'text-amber-200',
+    emerald: 'text-emerald-200',
+  }[accent]
+
+  return (
+    <div className="module-heading">
+      <div className={cn('font-mono-data mb-4 text-xs uppercase tracking-[0.42em]', accentClass)}>
+        {eyebrow}
+      </div>
+      {glitch ? (
+        <GlitchText speed={0.7} enableOnHover className="module-glitch-title">
+          {title}
+        </GlitchText>
+      ) : (
+        <BlurText
+          text={title}
+          animateBy="words"
+          delay={70}
+          className="module-blur-title"
+        />
+      )}
+      {description && (
+        <p className="module-heading-copy mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
+          {description}
+        </p>
+      )}
+    </div>
   )
 }
