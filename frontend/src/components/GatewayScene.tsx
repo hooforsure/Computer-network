@@ -1,12 +1,7 @@
 import { useGLTF, useTexture } from '@react-three/drei'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { Suspense, useMemo, useRef } from 'react'
+import { Suspense, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
-
-interface GatewaySceneProps {
-  focus: number
-  transitionBoost: number
-}
 
 const SHIP_SIZE =35
 const SHIP_POSITION = new THREE.Vector3(2.8, -0.25, 1)
@@ -14,7 +9,12 @@ const SHIP_ROTATION = new THREE.Euler(0.6, -0.1, 0.24)
 const STATION_EMISSIVE = new THREE.Color('#20101c')
 const COMPANION_EMISSIVE = new THREE.Color('#08070d')
 
-export function GatewayScene(_: GatewaySceneProps) {
+interface GatewaySceneProps {
+  focus: number
+  transitionBoost: number
+}
+
+export function GatewayScene({ focus, transitionBoost }: GatewaySceneProps) {
   return (
     <Canvas camera={{ position: [0.25, 0.22, 5.2], fov: 54 }} dpr={[1, 1.7]} gl={{ antialias: true, alpha: false }}>
       <color attach="background" args={['#02040a']} />
@@ -27,10 +27,10 @@ export function GatewayScene(_: GatewaySceneProps) {
       <pointLight position={[-4.9, -1.65, -3.9]} intensity={4.8} color="#38dfff" distance={13} decay={2} />
       <pointLight position={[5.1, 2.4, -2.2]} intensity={4.2} color="#ff2d22" distance={12} decay={2} />
       <pointLight position={[0.4, -2.9, 1.8]} intensity={2.6} color="#136bff" distance={10} decay={2} />
-      <MovingParticles />
+      <MovingParticles transitionBoost={transitionBoost} />
       <Suspense fallback={null}>
         <NebulaBackdrop />
-        <StationSpecularRig />
+        <StationSpecularRig focus={focus} />
         <StationSubject />
         <CompanionTraffic />
       </Suspense>
@@ -38,14 +38,14 @@ export function GatewayScene(_: GatewaySceneProps) {
   )
 }
 
-function StationSpecularRig() {
+function StationSpecularRig({ focus }: { focus: number }) {
   const coldGlint = useRef<THREE.PointLight>(null)
   const redRim = useRef<THREE.PointLight>(null)
   const underGlow = useRef<THREE.PointLight>(null)
   const broadFill = useRef<THREE.PointLight>(null)
 
   useFrame(({ clock }) => {
-    const t = clock.elapsedTime*2
+    const t = clock.elapsedTime * (2 + focus * 0.05)
     if (coldGlint.current) {
       coldGlint.current.position.set(
         SHIP_POSITION.x - 1.2 + Math.sin(t * 0.65) * 1.2,
@@ -94,17 +94,25 @@ function StationSpecularRig() {
 
 function NebulaBackdrop() {
   const texture = useTexture('/textures/nebula-skydome.png')
-  const material = useMemo(() => {
-    texture.colorSpace = THREE.SRGBColorSpace
-    texture.wrapS = THREE.RepeatWrapping
-    texture.wrapT = THREE.ClampToEdgeWrapping
-    texture.repeat.set(1, 1)
-    texture.offset.set(0.08, 0)
-    texture.needsUpdate = true
+  const materialTexture = useMemo(() => {
+    const clonedTexture = texture.clone()
+    clonedTexture.colorSpace = THREE.SRGBColorSpace
+    clonedTexture.wrapS = THREE.RepeatWrapping
+    clonedTexture.wrapT = THREE.ClampToEdgeWrapping
+    clonedTexture.repeat.set(1, 1)
+    clonedTexture.offset.set(0.08, 0)
+    clonedTexture.needsUpdate = true
+    return clonedTexture
+  }, [texture])
 
+  useEffect(() => {
+    return () => materialTexture.dispose()
+  }, [materialTexture])
+
+  const material = useMemo(() => {
     return new THREE.ShaderMaterial({
       uniforms: {
-        map: { value: texture },
+        map: { value: materialTexture },
         brightness: { value: 1.92 },
         baseColor: { value: new THREE.Color('#02040a') },
         cyanTint: { value: new THREE.Color('#68ddff') },
@@ -150,7 +158,7 @@ function NebulaBackdrop() {
       toneMapped: false,
       transparent: false,
     })
-  }, [texture])
+  }, [materialTexture])
 
   const ref = useRef<THREE.Mesh>(null)
 
@@ -493,16 +501,16 @@ function AsteroidPass({
   )
 }
 
-function MovingParticles() {
+function MovingParticles({ transitionBoost }: { transitionBoost: number }) {
   const ref = useRef<THREE.Points>(null)
   const positions = useMemo(() => {
     const count = 1800
     const data = new Float32Array(count * 3)
 
     for (let index = 0; index < count; index += 1) {
-      const radius = 3 + Math.random() * 16
-      const angle = Math.random() * Math.PI * 2
-      const height = (Math.random() - 0.5) * 9
+      const radius = 3 + seededUnit(index, 1) * 16
+      const angle = seededUnit(index, 2) * Math.PI * 2
+      const height = (seededUnit(index, 3) - 0.5) * 9
       data[index * 3] = Math.cos(angle) * radius
       data[index * 3 + 1] = height
       data[index * 3 + 2] = Math.sin(angle) * radius - 6
@@ -514,9 +522,9 @@ function MovingParticles() {
   useFrame(({ clock }) => {
     if (!ref.current) return
     const t = clock.elapsedTime
-    ref.current.rotation.y = t * 0.035
+    ref.current.rotation.y = t * (0.035 + transitionBoost * 0.024)
     ref.current.rotation.x = Math.sin(t * 0.12) * 0.025
-    ref.current.position.z = (t * 0.55) % 2.2
+    ref.current.position.z = (t * (0.55 + transitionBoost * 0.38)) % 2.2
   })
 
   return (
@@ -527,4 +535,9 @@ function MovingParticles() {
       <pointsMaterial color="#dbeafe" size={0.018} transparent opacity={0.72} depthWrite={false} />
     </points>
   )
+}
+
+function seededUnit(index: number, salt: number) {
+  const value = Math.sin(index * 12.9898 + salt * 78.233) * 43758.5453
+  return value - Math.floor(value)
 }

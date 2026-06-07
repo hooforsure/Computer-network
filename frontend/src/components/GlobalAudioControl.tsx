@@ -2,17 +2,18 @@ import { Music, Volume2, VolumeX } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 type AudioState = 'idle' | 'playing' | 'blocked' | 'muted'
+const INITIAL_VOLUME = 0.34
 
 export function GlobalAudioControl() {
   const audioRef = useRef<HTMLAudioElement>(null)
-  const previousVolumeRef = useRef(0.34)
+  const previousVolumeRef = useRef(INITIAL_VOLUME)
   const [state, setState] = useState<AudioState>('idle')
-  const [volume, setVolume] = useState(0.34)
+  const [volume, setVolume] = useState(INITIAL_VOLUME)
 
   useEffect(() => {
     const audio = audioRef.current
     if (!audio) return
-    audio.volume = volume
+    audio.volume = INITIAL_VOLUME
     audio.loop = true
     audio
       .play()
@@ -33,7 +34,7 @@ export function GlobalAudioControl() {
     if (!audio) return
 
     if (audio.muted || volume === 0) {
-      const restored = previousVolumeRef.current || 0.34
+      const restored = previousVolumeRef.current || INITIAL_VOLUME
       audio.muted = false
       audio.volume = restored
       setVolume(restored)

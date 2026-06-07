@@ -1,6 +1,6 @@
 import { Billboard, Html, Line, OrbitControls, Text } from '@react-three/drei'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { Suspense, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import type { SimulationStep, TopologyNode } from '../types/simulation'
 
@@ -582,10 +582,11 @@ function CameraRig({
   const lastFocusNonce = useRef(focusNonce)
   const focusUntil = useRef(0)
 
-  if (lastFocusNonce.current !== focusNonce) {
+  useEffect(() => {
+    if (lastFocusNonce.current === focusNonce) return
     lastFocusNonce.current = focusNonce
     focusUntil.current = performance.now() + 1200
-  }
+  }, [focusNonce])
 
   useFrame(({ camera }) => {
     if (performance.now() > focusUntil.current) return

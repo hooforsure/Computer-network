@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from 'react'
 import { Link2, RotateCcw, SkipBack, SkipForward, Unlink } from 'lucide-react'
+import { useCallback } from 'react'
 import { AppShell } from '../components/AppShell'
 import { NetworkScene } from '../components/NetworkScene'
 import { PlaybackControls } from '../components/PlaybackControls'
@@ -70,13 +71,44 @@ export function ProtocolLabPage() {
   const topology: TopologyNode[] = labMode === 'dns' ? createDnsTopology(domain) : tcpTopology
   const currentStep = steps[Math.min(index, steps.length - 1)]
 
-  useEffect(() => {
-    setIndex(0)
-  }, [apiSteps, dnsRun, labMode, tcpMode])
+  const refreshDnsCaches = useCallback(() => {
+    fetchDnsCache()
+      .then((rows) => setDnsCache(rows.map((row) => ({ domain: row.domain, ip: row.ip, ttl: row.ttl, source: row.source }))))
+      .catch(() => {})
+    fetchHostDnsCache()
+      .then((rows) => setHostDnsCache(rows.map((row) => ({ domain: row.domain, ip: row.ip, ttl: row.ttl, source: row.source }))))
+      .catch(() => {})
+  }, [])
+
+  const commitDnsResolution = useCallback(async () => {
+    if (dnsCacheLayer === 'host') {
+      setCommittedDnsRun(dnsRun)
+      setDnsRunStatus('completed')
+      setDnsRunLocked(false)
+      return
+    }
+    const ip = resolvedDnsIp ?? resolveDnsIp(normalizedDomain)
+    const nextRecord = {
+      domain: normalizedDomain,
+      ip,
+      ttl: '300s',
+      source: 'resolver',
+    }
+    try {
+      await commitDnsResolutionApi(normalizedDomain)
+      setDnsCache((rows) => upsertCacheRow(rows, nextRecord))
+      setHostDnsCache((rows) => upsertCacheRow(rows, { ...nextRecord, source: 'browser' }))
+      refreshDnsCaches()
+    } finally {
+      setCommittedDnsRun(dnsRun)
+      setDnsRunStatus('completed')
+      setDnsRunLocked(false)
+    }
+  }, [dnsCacheLayer, dnsRun, normalizedDomain, refreshDnsCaches, resolvedDnsIp])
 
   useEffect(() => {
     refreshDnsCaches()
-  }, [])
+  }, [refreshDnsCaches])
 
   useEffect(() => {
     if (labMode !== 'tcp') return
@@ -85,29 +117,18 @@ export function ProtocolLabPage() {
       .catch(() => setApiSteps(null))
   }, [clientSeq, labMode, serverSeq, tcpMode])
 
-  useEffect(() => {
-    if (labMode !== 'dns') return
-    if (currentStep.id !== 'dns-10') return
-    if (committedDnsRun === dnsRun) return
-    commitDnsResolution()
-  }, [committedDnsRun, currentStep.id, dnsRun, labMode, normalizedDomain])
-
-  useEffect(() => {
-    if (labMode !== 'dns') return
-    if (currentStep.id !== 'dns-10') return
-  }, [currentStep.id, labMode, normalizedDomain])
-
   function next() {
     if (labMode === 'dns' && dnsRunStatus === 'idle') {
       beginDnsRun()
       return
     }
-    setIndex((value) => {
-      const nextIndex = Math.min(value + 1, steps.length - 1)
-      if (labMode === 'dns') setDnsMaxUnlockedIndex((max) => Math.max(max, nextIndex))
-      if (labMode === 'dns') setFocusNonce((nonce) => nonce + 1)
-      return nextIndex
-    })
+    const nextIndex = Math.min(index + 1, steps.length - 1)
+    setIndex(nextIndex)
+    if (labMode === 'dns') {
+      setDnsMaxUnlockedIndex((max) => Math.max(max, nextIndex))
+      setFocusNonce((nonce) => nonce + 1)
+      completeDnsRunAt(nextIndex)
+    }
   }
 
   function prev() {
@@ -174,32 +195,14 @@ export function ProtocolLabPage() {
   function selectTimelineStep(nextIndex: number) {
     if (labMode === 'dns' && nextIndex > dnsMaxUnlockedIndex) return
     setIndex(nextIndex)
+    completeDnsRunAt(nextIndex)
   }
 
-  async function commitDnsResolution() {
-    if (dnsCacheLayer === 'host') {
-      setCommittedDnsRun(dnsRun)
-      setDnsRunStatus('completed')
-      setDnsRunLocked(false)
-      return
-    }
-    const ip = resolvedDnsIp ?? resolveDnsIp(normalizedDomain)
-    const nextRecord = {
-      domain: normalizedDomain,
-      ip,
-      ttl: '300s',
-      source: 'resolver',
-    }
-    try {
-      await commitDnsResolutionApi(normalizedDomain)
-      setDnsCache((rows) => upsertCacheRow(rows, nextRecord))
-      setHostDnsCache((rows) => upsertCacheRow(rows, { ...nextRecord, source: 'browser' }))
-      refreshDnsCaches()
-    } finally {
-      setCommittedDnsRun(dnsRun)
-      setDnsRunStatus('completed')
-      setDnsRunLocked(false)
-    }
+  function completeDnsRunAt(nextIndex: number) {
+    if (labMode !== 'dns') return
+    if (steps[Math.min(nextIndex, steps.length - 1)]?.id !== 'dns-10') return
+    if (committedDnsRun === dnsRun) return
+    void commitDnsResolution()
   }
 
   function deleteDnsCacheRecord(domainToDelete: string) {
@@ -241,13 +244,29 @@ export function ProtocolLabPage() {
     setDnsRun((value) => value + 1)
   }
 
-  function refreshDnsCaches() {
-    fetchDnsCache()
-      .then((rows) => setDnsCache(rows.map((row) => ({ domain: row.domain, ip: row.ip, ttl: row.ttl, source: row.source }))))
-      .catch(() => {})
-    fetchHostDnsCache()
-      .then((rows) => setHostDnsCache(rows.map((row) => ({ domain: row.domain, ip: row.ip, ttl: row.ttl, source: row.source }))))
-      .catch(() => {})
+  function switchLabMode(nextMode: LabMode) {
+    setLabMode(nextMode)
+    setIndex(0)
+    setFocusNonce((nonce) => nonce + 1)
+  }
+
+  function changeTcpMode(nextMode: TcpMode) {
+    setTcpMode(nextMode)
+    setApiSteps(null)
+    setIndex(0)
+    setFocusNonce((nonce) => nonce + 1)
+  }
+
+  function changeClientSeq(value: number) {
+    setClientSeq(value)
+    setApiSteps(null)
+    setIndex(0)
+  }
+
+  function changeServerSeq(value: number) {
+    setServerSeq(value)
+    setApiSteps(null)
+    setIndex(0)
   }
 
   const terminalDnsRun = labMode === 'dns' && (
@@ -283,10 +302,10 @@ export function ProtocolLabPage() {
                 glitch={labMode === 'tcp'}
               />
               <div className="flex w-fit rounded-2xl border border-slate-700/50 bg-slate-950/55 p-1 backdrop-blur-md">
-                <ModeButton active={labMode === 'dns'} onClick={() => setLabMode('dns')}>
+                <ModeButton active={labMode === 'dns'} onClick={() => switchLabMode('dns')}>
                   DNS
                 </ModeButton>
-                <ModeButton active={labMode === 'tcp'} onClick={() => setLabMode('tcp')}>
+                <ModeButton active={labMode === 'tcp'} onClick={() => switchLabMode('tcp')}>
                   TCP
                 </ModeButton>
               </div>
@@ -326,9 +345,9 @@ export function ProtocolLabPage() {
                   onPrev={prev}
                   onReset={reset}
                   nextDisabled={terminalDnsRun}
-                  onTcpModeChange={setTcpMode}
-                  onClientSeqChange={setClientSeq}
-                  onServerSeqChange={setServerSeq}
+                  onTcpModeChange={changeTcpMode}
+                  onClientSeqChange={changeClientSeq}
+                  onServerSeqChange={changeServerSeq}
                 />
               </div>
               {labMode === 'tcp' && (
