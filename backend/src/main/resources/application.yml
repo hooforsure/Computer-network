@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: netverse-protocol-lab
+  config:
+    import: optional:file:../.env[.properties],optional:file:.env[.properties]
   datasource:
     url: ${NETVERSE_DB_URL:jdbc:mysql://localhost:3307/netverse_lab?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}
     username: ${NETVERSE_DB_USERNAME:root}

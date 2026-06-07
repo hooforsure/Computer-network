@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS knowledge_relation (
   source_id VARCHAR(64) NOT NULL,
   target_id VARCHAR(64) NOT NULL,
   relation_type VARCHAR(64) NOT NULL,
+  UNIQUE KEY uk_knowledge_relation (source_id, target_id, relation_type),
   INDEX idx_relation_source (source_id),
   INDEX idx_relation_target (target_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -41,6 +42,15 @@ CREATE TABLE IF NOT EXISTS dns_cache (
   ip VARCHAR(64) NOT NULL,
   ttl INT NOT NULL DEFAULT 300,
   source VARCHAR(64) NOT NULL DEFAULT 'resolver',
+  cached_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS host_dns_cache (
+  domain VARCHAR(255) PRIMARY KEY,
+  ip VARCHAR(64) NOT NULL,
+  ttl INT NOT NULL DEFAULT 300,
+  source VARCHAR(64) NOT NULL DEFAULT 'browser',
   cached_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -11,6 +11,22 @@ export interface KnowledgePointDto {
   detail: string
 }
 
+export interface KnowledgeGraphDto {
+  nodes: Array<{
+    id: string
+    label: string
+    type: 'root' | 'layer' | 'point'
+    layer: KnowledgePointDto['layer'] | null
+    category: string | null
+    point: KnowledgePointDto | null
+  }>
+  links: Array<{
+    source: string
+    target: string
+    relationType: string
+  }>
+}
+
 export interface DnsCacheDto {
   domain: string
   ip: string
@@ -29,6 +45,10 @@ export interface DnsResolveResponse {
 export async function fetchKnowledgePoints() {
   const data = await request<{ content: KnowledgePointDto[] }>('/api/knowledge/points?page=0&size=100')
   return data.content
+}
+
+export async function fetchKnowledgeGraph() {
+  return request<KnowledgeGraphDto>('/api/knowledge/graph')
 }
 
 export async function saveKnowledgePoint(point: KnowledgePointDto, exists: boolean) {

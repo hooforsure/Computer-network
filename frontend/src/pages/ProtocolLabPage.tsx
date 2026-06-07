@@ -55,7 +55,7 @@ export function ProtocolLabPage() {
   const [dnsCacheLayer, setDnsCacheLayer] = useState<DnsCacheLayer | null>(null)
   const [resolvedDnsIp, setResolvedDnsIp] = useState<string | null>(null)
   const normalizedDomain = normalizeDomain(domain)
-  const currentRunCacheHit = Boolean(dnsRunLocked && domain.trim() && confirmedCacheHitDomain === normalizedDomain)
+  const currentRunCacheHit = Boolean(domain.trim() && confirmedCacheHitDomain === normalizedDomain)
   const runCachedRecord = activeDnsRecord?.domain === normalizedDomain ? activeDnsRecord : undefined
 
   const steps = useMemo(() => {
@@ -135,6 +135,8 @@ export function ProtocolLabPage() {
     setLabMode('dns')
     if (dnsRunLocked) return
     const queryDomain = domain.trim() || 'www.abc.com'
+    const normalizedQueryDomain = normalizeDomain(queryDomain)
+    let unlockAfterResponse = false
     if (!domain.trim()) setDomain(queryDomain)
     setDnsRunLocked(true)
     try {
@@ -145,19 +147,22 @@ export function ProtocolLabPage() {
       setConfirmedCacheHitDomain(response.cacheHit ? response.domain : null)
       setDnsCacheLayer(response.cacheLayer)
       setResolvedDnsIp(response.ip)
+      unlockAfterResponse = response.cacheHit
     } catch {
-      const record = dnsCache.find((row) => row.domain === normalizeDomain(queryDomain))
+      const record = dnsCache.find((row) => row.domain === normalizedQueryDomain)
       setApiSteps(null)
       setActiveDnsRecord(record)
       setDnsRunStatus(record ? 'cache-hit' : 'running')
       setDnsMaxUnlockedIndex(record ? 0 : 1)
       setConfirmedCacheHitDomain(record ? record.domain : null)
       setDnsCacheLayer(record ? 'resolver' : 'miss')
-      setResolvedDnsIp(record?.ip ?? resolveDnsIp(normalizeDomain(queryDomain)))
+      setResolvedDnsIp(record?.ip ?? resolveDnsIp(normalizedQueryDomain))
+      unlockAfterResponse = true
     } finally {
       setDnsRun((value) => value + 1)
       setIndex(0)
       setFocusNonce((nonce) => nonce + 1)
+      if (unlockAfterResponse) setDnsRunLocked(false)
     }
   }
 
@@ -175,6 +180,7 @@ export function ProtocolLabPage() {
     if (dnsCacheLayer === 'host') {
       setCommittedDnsRun(dnsRun)
       setDnsRunStatus('completed')
+      setDnsRunLocked(false)
       return
     }
     const ip = resolvedDnsIp ?? resolveDnsIp(normalizedDomain)
@@ -184,12 +190,16 @@ export function ProtocolLabPage() {
       ttl: '300s',
       source: 'resolver',
     }
-    await commitDnsResolutionApi(normalizedDomain)
-    setDnsCache((rows) => upsertCacheRow(rows, nextRecord))
-    setHostDnsCache((rows) => upsertCacheRow(rows, { ...nextRecord, source: 'browser' }))
-    setCommittedDnsRun(dnsRun)
-    setDnsRunStatus('completed')
-    refreshDnsCaches()
+    try {
+      await commitDnsResolutionApi(normalizedDomain)
+      setDnsCache((rows) => upsertCacheRow(rows, nextRecord))
+      setHostDnsCache((rows) => upsertCacheRow(rows, { ...nextRecord, source: 'browser' }))
+      refreshDnsCaches()
+    } finally {
+      setCommittedDnsRun(dnsRun)
+      setDnsRunStatus('completed')
+      setDnsRunLocked(false)
+    }
   }
 
   function deleteDnsCacheRecord(domainToDelete: string) {

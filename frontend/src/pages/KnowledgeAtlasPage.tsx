@@ -6,7 +6,8 @@ import * as THREE from 'three'
 import { AppShell } from '../components/AppShell'
 import { NetVerseMagicBento } from '../components/NetVerseMagicBento'
 import { ModuleSignalHeading } from '../components/VisualEffects'
-import { deleteKnowledgePoint, fetchKnowledgePoints, saveKnowledgePoint } from '../api/netverseApi'
+import { deleteKnowledgePoint, fetchKnowledgeGraph, fetchKnowledgePoints, saveKnowledgePoint } from '../api/netverseApi'
+import type { KnowledgeGraphDto } from '../api/netverseApi'
 import { cn } from '../lib/classNames'
 
 type KnowledgeLayer = '应用层' | '传输层' | '网络层' | '数据链路层' | '物理层'
@@ -119,10 +120,11 @@ export function KnowledgeAtlasPage() {
   const [selectedId, setSelectedId] = useState(seedPoints[0].id)
   const [selectedNodeId, setSelectedNodeId] = useState(seedPoints[0].id)
   const [editing, setEditing] = useState<KnowledgePoint | null>(null)
+  const [graphLinks, setGraphLinks] = useState<KnowledgeGraphDto['links'] | null>(null)
   const selected = points.find((item) => item.id === selectedId) ?? points[0]
   const activeLayer = activeTab === '知识图谱' ? '应用层' : activeTab
   const activeProfile = layerProfiles.find((profile) => profile.layer === activeLayer) ?? layerProfiles[0]
-  const graph = useMemo(() => createGraph(points), [points])
+  const graph = useMemo(() => createGraph(points, graphLinks), [graphLinks, points])
   const selectedNode = graphNodeById(graph, selectedNodeId) ?? graphNodeById(graph, selectedId)
 
   useEffect(() => {
@@ -131,14 +133,18 @@ export function KnowledgeAtlasPage() {
 
   useEffect(() => {
     let cancelled = false
-    fetchKnowledgePoints()
-      .then((apiPoints) => {
-        if (cancelled || apiPoints.length === 0) return
-        setPoints(apiPoints)
-        setSelectedId(apiPoints[0].id)
-        setSelectedNodeId(apiPoints[0].id)
+    Promise.allSettled([fetchKnowledgePoints(), fetchKnowledgeGraph()])
+      .then(([pointsResult, graphResult]) => {
+        if (cancelled) return
+        if (pointsResult.status === 'fulfilled' && pointsResult.value.length > 0) {
+          setPoints(pointsResult.value)
+          setSelectedId(pointsResult.value[0].id)
+          setSelectedNodeId(pointsResult.value[0].id)
+        }
+        if (graphResult.status === 'fulfilled') {
+          setGraphLinks(graphResult.value.links)
+        }
       })
-      .catch(() => {})
     return () => {
       cancelled = true
     }
@@ -193,6 +199,7 @@ export function KnowledgeAtlasPage() {
       })
       setSelectedId(saved.id)
       setActiveTab(saved.layer)
+      refreshKnowledgeGraph()
     } catch {
       setPoints((rows) => {
         return exists
@@ -214,6 +221,20 @@ export function KnowledgeAtlasPage() {
     }
     setPoints((rows) => rows.filter((item) => item.id !== id))
     if (selectedId === id) setSelectedId(points.find((item) => item.id !== id)?.id ?? '')
+    refreshKnowledgeGraph()
+  }
+
+  function refreshKnowledgeGraph() {
+    Promise.allSettled([fetchKnowledgePoints(), fetchKnowledgeGraph()])
+      .then(([pointsResult, graphResult]) => {
+        if (pointsResult.status === 'fulfilled' && pointsResult.value.length > 0) {
+          setPoints(pointsResult.value)
+        }
+        if (graphResult.status === 'fulfilled') {
+          setGraphLinks(graphResult.value.links)
+        }
+      })
+      .catch(() => {})
   }
 
   return (
@@ -814,7 +835,7 @@ function EditorField({
   )
 }
 
-function createGraph(points: KnowledgePoint[]) {
+function createGraph(points: KnowledgePoint[], persistedLinks: KnowledgeGraphDto['links'] | null = null) {
   const nodes: GraphNode[] = []
   const links: Array<{ source: string; target: string }> = []
   nodes.push({ id: 'root', label: '计算机网络', type: 'root', accent: '#f8fafc', position: [0, 4.4, 0] })
@@ -832,7 +853,7 @@ function createGraph(points: KnowledgePoint[]) {
       position: [layerX, layerY, 0],
     }
     nodes.push(layerNode)
-    links.push({ source: 'root', target: layerNode.id })
+    if (!persistedLinks) links.push({ source: 'root', target: layerNode.id })
 
     const concepts = [...profile.protocols.slice(0, 4), ...profile.devices.slice(0, 2), profile.dataUnit]
     concepts.forEach((name, index) => {
@@ -871,9 +892,16 @@ function createGraph(points: KnowledgePoint[]) {
         ],
       }
       nodes.push(node)
-      links.push({ source: layerNode.id, target: node.id })
+      if (!persistedLinks) links.push({ source: layerNode.id, target: node.id })
     })
   })
+
+  if (persistedLinks) {
+    const nodeIds = new Set(nodes.map((node) => node.id))
+    persistedLinks
+      .filter((link) => nodeIds.has(link.source) && nodeIds.has(link.target))
+      .forEach((link) => links.push({ source: link.source, target: link.target }))
+  }
 
   return { nodes, links }
 }

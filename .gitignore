@@ -24,6 +24,9 @@ replay_pid*
 # Maven / Java local tooling
 .mvn-settings*.xml
 backend/.mvn-settings*.xml
+!backend/.mvn/
+!backend/.mvn/maven.config
+!backend/.mvn/settings.xml
 .classpath
 .project
 .settings/
