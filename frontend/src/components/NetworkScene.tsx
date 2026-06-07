@@ -35,7 +35,7 @@ export function NetworkScene({
   )
 
   return (
-    <Canvas className="absolute inset-0 h-full w-full" camera={{ position: [-2.15, 5.55, 11.15], fov: 50 }} dpr={[1, 1.8]} gl={{ antialias: true }}>
+    <Canvas className="absolute inset-0 h-full w-full" camera={{ position: [-2.15, 5.55, 11.15], fov: 50 }} dpr={[1, 1.5]} gl={{ antialias: true, powerPreference: 'high-performance' }}>
       <color attach="background" args={['#05070d']} />
       <fog attach="fog" args={['#05070d', 18, 44]} />
       <ambientLight intensity={0.78} />

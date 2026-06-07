@@ -9,8 +9,10 @@ export function GlobalAudioControl() {
   const previousVolumeRef = useRef(INITIAL_VOLUME)
   const [state, setState] = useState<AudioState>('idle')
   const [volume, setVolume] = useState(INITIAL_VOLUME)
+  const [audioEnabled, setAudioEnabled] = useState(false)
 
   useEffect(() => {
+    if (!audioEnabled) return
     const audio = audioRef.current
     if (!audio) return
     audio.volume = INITIAL_VOLUME
@@ -19,9 +21,13 @@ export function GlobalAudioControl() {
       .play()
       .then(() => setState('playing'))
       .catch(() => setState('blocked'))
-  }, [])
+  }, [audioEnabled])
 
   function activateAudio() {
+    if (!audioEnabled) {
+      setAudioEnabled(true)
+      return
+    }
     const audio = audioRef.current
     if (!audio) return
     audio.muted = false
@@ -70,7 +76,7 @@ export function GlobalAudioControl() {
 
   return (
     <div className="global-audio-control fixed right-5 top-5 z-[80] flex items-center gap-2">
-      <audio ref={audioRef} src="/audio/worry.mp3" preload="auto" />
+      {audioEnabled && <audio ref={audioRef} src="/audio/worry.mp3" preload="metadata" />}
       {blocked ? (
         <button
           type="button"

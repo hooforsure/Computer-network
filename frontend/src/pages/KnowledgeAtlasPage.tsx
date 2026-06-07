@@ -343,7 +343,7 @@ function KnowledgeGraph3D({
   onSelect: (node: GraphNode) => void
 }) {
   return (
-    <Canvas className="absolute inset-0 z-0 h-full w-full" camera={{ position: [0, 2.2, 12.8], fov: 58 }} dpr={[1, 1.8]} gl={{ antialias: true }}>
+    <Canvas className="absolute inset-0 z-0 h-full w-full" camera={{ position: [0, 2.2, 12.8], fov: 58 }} dpr={[1, 1.5]} gl={{ antialias: true, powerPreference: 'high-performance' }}>
       <color attach="background" args={['#05070d']} />
       <fog attach="fog" args={['#05070d', 26, 62]} />
       <ambientLight intensity={0.8} />

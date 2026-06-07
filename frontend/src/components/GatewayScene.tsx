@@ -16,7 +16,7 @@ interface GatewaySceneProps {
 
 export function GatewayScene({ focus, transitionBoost }: GatewaySceneProps) {
   return (
-    <Canvas camera={{ position: [0.25, 0.22, 5.2], fov: 54 }} dpr={[1, 1.7]} gl={{ antialias: true, alpha: false }}>
+    <Canvas camera={{ position: [0.25, 0.22, 5.2], fov: 54 }} dpr={[1, 1.5]} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}>
       <color attach="background" args={['#02040a']} />
       <fog attach="fog" args={['#090914', 12, 30]} />
       <ambientLight intensity={0.5} color="#9fcaff" />
@@ -504,7 +504,7 @@ function AsteroidPass({
 function MovingParticles({ transitionBoost }: { transitionBoost: number }) {
   const ref = useRef<THREE.Points>(null)
   const positions = useMemo(() => {
-    const count = 1800
+    const count = 1200
     const data = new Float32Array(count * 3)
 
     for (let index = 0; index < count; index += 1) {
@@ -541,3 +541,19 @@ function seededUnit(index: number, salt: number) {
   const value = Math.sin(index * 12.9898 + salt * 78.233) * 43758.5453
   return value - Math.floor(value)
 }
+
+const preloadGatewayAssets = () => {
+  useGLTF.preload('/models/space_station_modules.glb')
+  useGLTF.preload('/models/satellite.glb')
+  useGLTF.preload('/models/hero_ship.glb')
+  useGLTF.preload('/models/asteroid_01.glb')
+  useGLTF.preload('/models/asteroids_pack.glb')
+}
+
+const scheduleGatewayPreload = () => {
+  if (typeof window === 'undefined') return
+  const requestIdleCallback = window.requestIdleCallback ?? ((callback: IdleRequestCallback) => window.setTimeout(callback, 900))
+  requestIdleCallback(preloadGatewayAssets, { timeout: 2200 })
+}
+
+scheduleGatewayPreload()
