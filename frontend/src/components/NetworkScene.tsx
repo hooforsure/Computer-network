@@ -10,6 +10,9 @@ interface NetworkSceneProps {
   nodes: TopologyNode[]
   step: SimulationStep
   focusNonce?: number
+  sceneOffset?: [number, number, number]
+  nodeLabelOffset?: number
+  htmlNodeLabels?: boolean
   onNodeSelect?: (node: TopologyNode) => void
   onPacketSelect?: (step: SimulationStep) => void
   selectedNodeId?: string | null
@@ -19,10 +22,18 @@ export function NetworkScene({
   nodes,
   step,
   focusNonce = 0,
+  sceneOffset: sceneOffsetInput,
+  nodeLabelOffset = 1.08,
+  htmlNodeLabels = false,
   onNodeSelect,
   onPacketSelect,
   selectedNodeId,
 }: NetworkSceneProps) {
+  const sceneOffset = useMemo(
+    () => (sceneOffsetInput ? new THREE.Vector3(...sceneOffsetInput) : SCENE_OFFSET),
+    [sceneOffsetInput],
+  )
+
   return (
     <Canvas className="absolute inset-0 h-full w-full" camera={{ position: [-2.15, 5.55, 11.15], fov: 50 }} dpr={[1, 1.8]} gl={{ antialias: true }}>
       <color attach="background" args={['#05070d']} />
@@ -31,19 +42,21 @@ export function NetworkScene({
       <pointLight position={[-3, 5.6, 5.5]} intensity={30} color="#22d3ee" />
       <pointLight position={[6, 2.8, -3]} intensity={18} color="#8b5cf6" />
       <pointLight position={[-7, 1.2, -2]} intensity={12} color="#34d399" />
-      <group position={SCENE_OFFSET}>
+      <group position={sceneOffset}>
         <NetworkGrid />
         <Suspense fallback={<TopologyFallback nodes={nodes} step={step} />}>
           <Topology
             nodes={nodes}
             step={step}
+            nodeLabelOffset={nodeLabelOffset}
+            htmlNodeLabels={htmlNodeLabels}
             selectedNodeId={selectedNodeId}
             onNodeSelect={onNodeSelect}
             onPacketSelect={onPacketSelect}
           />
         </Suspense>
       </group>
-      <CameraRig nodes={nodes} step={step} focusNonce={focusNonce} />
+      <CameraRig nodes={nodes} step={step} focusNonce={focusNonce} sceneOffset={sceneOffset} />
       <OrbitControls makeDefault enablePan maxDistance={18} minDistance={4.8} />
     </Canvas>
   )
@@ -92,12 +105,16 @@ function TopologyFallback({ nodes, step }: { nodes: TopologyNode[]; step: Simula
 function Topology({
   nodes,
   step,
+  nodeLabelOffset,
+  htmlNodeLabels,
   selectedNodeId,
   onNodeSelect,
   onPacketSelect,
 }: {
   nodes: TopologyNode[]
   step: SimulationStep
+  nodeLabelOffset: number
+  htmlNodeLabels: boolean
   selectedNodeId?: string | null
   onNodeSelect?: (node: TopologyNode) => void
   onPacketSelect?: (step: SimulationStep) => void
@@ -134,6 +151,8 @@ function Topology({
           node={node}
           active={step.highlightNodes?.includes(node.id) ?? false}
           selected={selectedNodeId === node.id}
+          labelOffset={nodeLabelOffset}
+          htmlLabel={htmlNodeLabels}
           selectable={Boolean(onNodeSelect) && (!isDnsTopology || node.id === 'cache' || node.id === 'localDns')}
           onSelect={onNodeSelect}
         />
@@ -172,12 +191,16 @@ function NetworkNode({
   node,
   active,
   selected,
+  labelOffset,
+  htmlLabel,
   selectable,
   onSelect,
 }: {
   node: TopologyNode
   active: boolean
   selected: boolean
+  labelOffset: number
+  htmlLabel: boolean
   selectable: boolean
   onSelect?: (node: TopologyNode) => void
 }) {
@@ -224,33 +247,42 @@ function NetworkNode({
           <meshBasicMaterial color="#67e8f9" transparent opacity={0.78} />
         </mesh>
       )}
-      <Billboard position={[0, 1.08, 0]} follow>
-        <Text
-          fontSize={0.22}
-          color="#f8fafc"
-          anchorX="center"
-          anchorY="middle"
-          outlineWidth={0.012}
-          outlineColor="#020617"
-          renderOrder={20}
-          material-depthTest={false}
-        >
-          {node.label}
-        </Text>
-        <Text
-          position={[0, -0.24, 0]}
-          fontSize={0.12}
-          color="#dbeafe"
-          anchorX="center"
-          anchorY="middle"
-          outlineWidth={0.008}
-          outlineColor="#020617"
-          renderOrder={20}
-          material-depthTest={false}
-        >
-          {node.role}
-        </Text>
-      </Billboard>
+      {htmlLabel ? (
+        <Html distanceFactor={8} position={[0, labelOffset, 0]} center>
+          <div className="pointer-events-none min-w-24 rounded-xl border border-cyan-200/55 bg-slate-950/88 px-3 py-1.5 text-center shadow-[0_0_22px_rgba(34,211,238,0.22)] backdrop-blur-sm">
+            <div className="whitespace-nowrap text-[15px] font-black leading-tight text-slate-50">{node.label}</div>
+            <div className="mt-0.5 whitespace-nowrap text-[10px] font-semibold leading-tight text-cyan-100">{node.role}</div>
+          </div>
+        </Html>
+      ) : (
+        <Billboard position={[0, labelOffset, 0]} follow>
+          <Text
+            fontSize={0.22}
+            color="#f8fafc"
+            anchorX="center"
+            anchorY="middle"
+            outlineWidth={0.012}
+            outlineColor="#020617"
+            renderOrder={20}
+            material-depthTest={false}
+          >
+            {node.label}
+          </Text>
+          <Text
+            position={[0, -0.24, 0]}
+            fontSize={0.12}
+            color="#dbeafe"
+            anchorX="center"
+            anchorY="middle"
+            outlineWidth={0.008}
+            outlineColor="#020617"
+            renderOrder={20}
+            material-depthTest={false}
+          >
+            {node.role}
+          </Text>
+        </Billboard>
+      )}
       {node.kind === 'switch' && <SwitchPortLabels />}
       {selected && (
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.39, 0]}>
@@ -535,7 +567,17 @@ function LocalScan({ nodes, hit, compact = false }: { nodes: TopologyNode[]; hit
   )
 }
 
-function CameraRig({ nodes, step, focusNonce }: { nodes: TopologyNode[]; step: SimulationStep; focusNonce: number }) {
+function CameraRig({
+  nodes,
+  step,
+  focusNonce,
+  sceneOffset,
+}: {
+  nodes: TopologyNode[]
+  step: SimulationStep
+  focusNonce: number
+  sceneOffset: THREE.Vector3
+}) {
   const target = useMemo(() => nodes.find((node) => node.id === step.cameraFocus), [nodes, step.cameraFocus])
   const lastFocusNonce = useRef(focusNonce)
   const focusUntil = useRef(0)
@@ -548,15 +590,15 @@ function CameraRig({ nodes, step, focusNonce }: { nodes: TopologyNode[]; step: S
   useFrame(({ camera }) => {
     if (performance.now() > focusUntil.current) return
     if (step.visualMode === 'local-scan') {
-      const focus = new THREE.Vector3(-2.95, 0.05, -0.18).add(SCENE_OFFSET)
+      const focus = new THREE.Vector3(-2.95, 0.05, -0.18).add(sceneOffset)
       const desired = new THREE.Vector3(-4.45, 4.25, 10.05)
       camera.position.lerp(desired, 0.028)
       camera.lookAt(focus)
       return
     }
     if (!target) return
-    const targetFocus = new THREE.Vector3(...target.position).add(SCENE_OFFSET)
-    const overviewCenter = new THREE.Vector3(-2.65, -0.82, -0.55)
+    const targetFocus = new THREE.Vector3(...target.position).add(sceneOffset)
+    const overviewCenter = new THREE.Vector3(-2.65, sceneOffset.y, -0.55)
     const focus = targetFocus.lerp(overviewCenter, 0.68)
     const desired = focus.clone().add(new THREE.Vector3(-0.85, 5.0, 10.65))
     camera.position.lerp(desired, 0.018)

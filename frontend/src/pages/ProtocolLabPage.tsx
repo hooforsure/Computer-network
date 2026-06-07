@@ -259,11 +259,14 @@ export function ProtocolLabPage() {
     <AppShell title="Protocol Lab">
       <section className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-[#05070d]">
         <section className="relative min-h-[calc(100vh-4rem)] overflow-hidden">
-          <div className="absolute inset-0">
+          <div className="absolute inset-x-0 bottom-0 top-[19rem] sm:top-[18.5rem] xl:top-[17.5rem]">
             <NetworkScene
               nodes={topology}
               step={currentStep}
               focusNonce={focusNonce}
+              sceneOffset={labMode === 'dns' ? [-1.72, -1.08, 0] : undefined}
+              nodeLabelOffset={labMode === 'dns' ? 0.78 : undefined}
+              htmlNodeLabels={labMode === 'dns'}
             />
           </div>
           <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_42%_56%,transparent_0%,rgba(5,7,13,0.08)_48%,rgba(5,7,13,0.74)_100%)]" />
